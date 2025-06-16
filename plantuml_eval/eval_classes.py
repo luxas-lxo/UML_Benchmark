@@ -94,7 +94,7 @@ class ClassComperator:
         
         #23: return classMatchMap, missClassList
         return class_match_map, final_miss_class_list   
-
+"""
 class_grades = EObjectGrade()
 class_grades.points = 2.0
 
@@ -104,6 +104,7 @@ class_grades.structuralgrades.append(attr_grades)
 
 print(f"Class Grade: {class_grades.points}")
 print(f"Attribute Grade: {class_grades.structuralgrades[0].points}")
+"""
 """  
 grades = GradeModel()
 grades.class_points["piece"] = 1.0

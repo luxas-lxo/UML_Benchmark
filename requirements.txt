@@ -2,3 +2,4 @@ Levenshtein
 sentence_transformers
 spacy
 nltk
+pyecore

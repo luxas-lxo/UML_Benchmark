@@ -15,7 +15,7 @@ model_configs = [
     # Füge weitere Modelle nach Bedarf hinzu
 ]
 
-with open("uml_prompts.jsonl", encoding="utf-8") as f:
+with open("LLM_response_generation\uml_prompts.jsonl", encoding="utf-8") as f:
     lines = f.readlines()
 
 prompts =["DESCRIPTION: "+json.loads(line)["description"]+";; QUESTION: "+json.loads(line)["question"]+";; EXAMPLE: "+json.loads(line)["example"] for line in lines]
@@ -30,9 +30,8 @@ for config in model_configs:
         api_key=API_KEY,
         base_url=BASE_URL
     )
-
     # Dateipfad für Ausgaben
-    output_path = f"{config['filename']}"
+    output_path = f"LLM_response_generation\{config['filename']}"
 
     # Erzeuge Antworten und schreibe sie in die Datei
     with open(output_path, "w", encoding="utf-8") as out_file:
