@@ -1,4 +1,5 @@
 from itertools import product
+from typing import Tuple
 from sentence_transformers import SentenceTransformer
 import spacy
 from nltk.corpus import wordnet as wn
@@ -56,10 +57,10 @@ class SemanticCheck:
         return similarity
 
     @staticmethod
-    def semantic_match(word1: str, word2: str, threshold: float = 0.7) -> bool:
+    def semantic_match(word1: str, word2: str, threshold: float = 0.7) -> Tuple[bool, float]:
         wup = SemanticCheck.wup_score(word1, word2)
         lin = SemanticCheck.lin_score(word1, word2)
         w2v = SemanticCheck.word2vec_score(word1, word2)
         tra = SemanticCheck.transformer_score(word1, word2)
         score = (0.1 * wup + 0.2 * lin + 0.3 * w2v + 0.4 * tra)
-        return score >= threshold
+        return (score >= threshold, score)
