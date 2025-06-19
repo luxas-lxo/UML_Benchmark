@@ -1,4 +1,6 @@
 from UML_model.uml_element import UMLElement
+from grading.grade_reference import GradeReference
+
 from enum import Enum
 
 class RelationType(Enum):
@@ -8,7 +10,7 @@ class RelationType(Enum):
     ASSOCIATION_LINK = "association link"
     UNKNOWN = "unknown"
 
-class UMLRelation(UMLElement):
+class UMLRelation(UMLElement, GradeReference):
     def __init__(self, type: RelationType, source: UMLElement, destination: UMLElement, s_multiplicity: str = "", d_multiplicity: str = ""):
         self.type = type
         self.source = source
@@ -16,10 +18,12 @@ class UMLRelation(UMLElement):
         self.s_multiplicity = s_multiplicity
         self.d_multiplicity = d_multiplicity
         self.directed = self.type != RelationType.ASSOCIATION
+        self.name = f"({source.name}, {destination.name})"
         
 
     def __repr__(self):
-        return f"UMLRelation({self.source} [{self.s_multiplicity}] -{self.type.name}- [{self.d_multiplicity}] {self.destination})"
+        #return f"UMLRelation({self.source} [{self.s_multiplicity}] -{self.type.name}- [{self.d_multiplicity}] {self.destination})"
+        return f"UMLRelation({self.source}, {self.destination})"
     
     def __eq__(self, other):
         if not isinstance(other, UMLRelation):

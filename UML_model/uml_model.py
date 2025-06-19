@@ -24,6 +24,9 @@ class UMLModel:
         if self.relation_list:
             self.assign_relations()
 
+    def __repr__(self):
+        return f"UMLModel(\nClasses: {self.class_list},\nEnums: {self.enum_list},\nRelations: {self.relation_list})"
+    
     def assign_relations(self):
         for relation in self.relation_list:
             if isinstance(relation.source, UMLElement) and isinstance(relation.destination, UMLElement):

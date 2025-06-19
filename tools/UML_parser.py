@@ -1,12 +1,13 @@
-from UML_model.uml_class import UMLClass
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
 from UML_model.uml_relation import UMLRelation, RelationType
-from UML_model.uml_enum import UMLEnum
+from UML_model.uml_enum import UMLEnum, UMLValue
 import re
 from typing import List
 
 
 class UMLParser:
-
+    #TODO: vorm normalisieren testen ob syntax konventionen eingehalten
+    # normalisieren ist wichtig für den semantik check
     @staticmethod
     def normalize_identifier(identifier: str) -> str:
         # Insert space before any uppercase letter that follows a lowercase letter or a number
@@ -20,6 +21,8 @@ class UMLParser:
 
     @staticmethod
     def parse_plantuml_classes(uml_text: str) -> List[UMLClass]:
+        # TODO: falls später notwendig hier oder in UMLClass die datentypen/visability/parameter/rückgabetypen extrahieren
+
         class_pattern = re.compile(r'class\s+(\w+)(?:\s+as\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
         classes = []
 
@@ -27,8 +30,8 @@ class UMLParser:
             name = UMLParser.normalize_identifier(match.group(1))
             body = match.group(2) or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            attributes = [UMLParser.normalize_identifier(line) for line in lines if "()" not in line]
-            operations = [UMLParser.normalize_identifier(line) for line in lines if "()" in line]
+            attributes = [UMLAttribute(UMLParser.normalize_identifier(line)) for line in lines if "()" not in line]
+            operations = [UMLOperation(UMLParser.normalize_identifier(line)) for line in lines if "()" in line]
             classes.append(UMLClass(name, attributes, operations)) 
 
         return classes
@@ -42,7 +45,7 @@ class UMLParser:
             name = UMLParser.normalize_identifier(match.group(1))
             body = match.group(2) or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            values = [UMLParser.normalize_identifier(line) for line in lines]
+            values = [UMLValue(UMLParser.normalize_identifier(line)) for line in lines]
             enums.append(UMLEnum(name, values)) 
 
         return enums
