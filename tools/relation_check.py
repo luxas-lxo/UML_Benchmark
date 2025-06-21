@@ -11,7 +11,7 @@ class RelationCheck:
             return (False, 0)
         reverse_class_match_map = {v: k for k, v in class_match_map.items()}
         mapped_list_s = [reverse_class_match_map.get(cs).name for cs in list_s if reverse_class_match_map.get(cs)]
-        set_s, set_i = set(mapped_list_s), set(ci.name for ci in list_i)
+        set_s, set_i = set(mapped_list_s), {ci.name for ci in list_i}
         overlap = len(set_s & set_i)
         similarity = overlap / max(len(set_s), len(set_i))
         return (similarity >= threshold, similarity)

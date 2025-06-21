@@ -2,7 +2,7 @@ from UML_model.uml_element import UMLElement
 from UML_model.uml_relation import UMLRelation
 from grading.grade_reference import GradeReference
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from enum import Enum
 import textwrap
 import shutil
@@ -55,7 +55,7 @@ class UMLAttribute(GradeReference):
         self.initial: str = initial
         self.visability: UMLVisability = visability
         self.derived: bool = derived
-        self.reference: UMLClass = None
+        self.reference: Optional[UMLClass] = None
     
     def __repr__(self): 
         return f"UMLAttribute({('/' if self.derived else '') + self.name}): visability {self.visability.name},  datatype  {self.datatype.name}, initial {'= ' + self.initial if self.initial else 'None'}"
@@ -76,7 +76,7 @@ class UMLOperation(GradeReference):
         self.params: Dict[str, UMLDataType] = params
         self.return_types: List[UMLDataType] = return_types
         self.visability: UMLVisability = visability
-        self.reference: UMLClass = None
+        self.reference: Optional[UMLClass] = None
 
     def __repr__(self): 
         return f"UMLOperation({self.name}({', '.join(f'{k}: {v.name}' for k, v in self.params.items())})): visabilty {self.visability.name}, return type [{', '.join(t.name for t in self.return_types)}]"
@@ -97,7 +97,7 @@ class UMLClass(UMLElement, GradeReference):
         self.operations: List[UMLOperation] = operations
         self.relations: List[UMLRelation] = []
         #TODO fehlt noch vollständig in Implementation
-        self.super_class: UMLClass = None 
+        self.super_class: Optional[UMLClass] = None 
         for att in self.attributes:
             att.reference = self
         for opr in self.operations:
@@ -140,13 +140,13 @@ class UMLClass(UMLElement, GradeReference):
                 ends.append(rel.source)
         return ends
     
-    def find_attribute(self, attribute_name: str) -> UMLAttribute:
+    def find_attribute(self, attribute_name: str) -> Optional[UMLAttribute]:
         for att in self.attributes:
             if att.name.lower().strip() == attribute_name.lower().strip():
                 return att
         return None
     
-    def find_operation(self, operation_name: str) -> UMLOperation:
+    def find_operation(self, operation_name: str) -> Optional[UMLOperation]:
         for opr in self.operations:
             if opr.name.lower().strip() == operation_name.lower().strip():
                 return opr
@@ -154,6 +154,7 @@ class UMLClass(UMLElement, GradeReference):
     
     def print_details(self):
         term_width = shutil.get_terminal_size((80, 20)).columns  - 10
+        empty = "\t\tempty"
         print(f"**{self} Details:**")
         print("\t**Attribute list:**")
         if self.attributes:
@@ -169,7 +170,7 @@ class UMLClass(UMLElement, GradeReference):
                 )
                 print(wrapped)
         else: 
-            print("\t\tempty")
+            print(empty)
 
         print("\t**Operation list:**")
         if self.operations:
@@ -185,7 +186,7 @@ class UMLClass(UMLElement, GradeReference):
                 )
                 print(wrapped)
         else: 
-            print("\t\tempty")
+            print(empty)
 
         print("\t**Relation list:**")
         if self.relations:
@@ -201,7 +202,7 @@ class UMLClass(UMLElement, GradeReference):
                 )
                 print(wrapped)
         else: 
-            print("\t\tempty")
+            print(empty)
 
         print("\n")
 

@@ -4,7 +4,7 @@ from UML_model.uml_relation import UMLRelation, RelationType
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import textwrap
 import shutil
 
@@ -58,16 +58,16 @@ class UMLModel:
                 if not relation.directed:
                     self.element_lookup[relation.destination.name.lower().strip()].add_relation(relation)
 
-    def find_element(self, element_name: str) -> UMLElement:
+    def find_element(self, element_name: str) -> Optional[UMLElement]:
         return self.element_lookup.get(element_name.lower().strip())
     
-    def find_class(self, class_name: str) -> UMLClass:
+    def find_class(self, class_name: str) -> Optional[UMLClass]:
         return self.class_lookup.get(class_name.lower().strip())
     
-    def find_enum(self, enum_name: str) -> UMLEnum:
+    def find_enum(self, enum_name: str) -> Optional[UMLEnum]:
         return self.enum_lookup.get(enum_name.lower().strip())
     
-    def find_relation(self, relation_name: str) -> UMLRelation:
+    def find_relation(self, relation_name: str) -> Optional[UMLRelation]:
         return self.relation_lookup.get(relation_name.lower().strip())
     
     

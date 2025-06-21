@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from UML_model.uml_model import UMLModel
 from plantuml_eval.eval_classes import ClassComperator
-from grading.grade_metamodel_new import GradeModel, StructuralFeature
+from grading.grade_metamodel import GradeModel, StructuralFeature
 
 plantuml_text1 = """
 @startuml

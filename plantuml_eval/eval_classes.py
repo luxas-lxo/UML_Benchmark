@@ -7,7 +7,7 @@ from UML_model.uml_element import UMLElement
 from UML_model.uml_model import UMLModel
 
 from enum import Enum
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional
 
 
 class MatchType(Enum):
@@ -30,7 +30,7 @@ class ClassComperator:
     def find_best_class_match(inst_class: UMLClass, possible_matches: List[Match]):
         #TODO später vllt noch mit wirklicher bewertung?
         best_score = 0
-        best_match: Match = None
+        best_match: Optional[Match] = None
         for m in possible_matches:
             if m.score > best_score:
                 best_match = m
@@ -40,7 +40,7 @@ class ClassComperator:
     def find_best_content_match(inst_att: UMLAttribute, possible_matches: List[Match]):
         #TODO später vllt noch mit wirklicher bewertung?
         best_score = 0
-        best_match: Match = None
+        best_match: Optional[Match] = None
         for m in possible_matches:
             if m.score > best_score:
                 best_match = m

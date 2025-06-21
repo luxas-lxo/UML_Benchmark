@@ -1,15 +1,16 @@
 from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability, UMLDataType
 from UML_model.uml_relation import UMLRelation, RelationType
 from UML_model.uml_enum import UMLEnum, UMLValue
+from UML_model.uml_element import UMLElement
 
 import re
-from typing import List
+from typing import List, Dict
 
 class UMLParser:
     
     @staticmethod
     def parse_attribute(line: str) -> UMLAttribute:
-        attr_pattern = re.compile(r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?:[:]\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$')
+        attr_pattern = re.compile(r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$')
 
         match = attr_pattern.match(line)
         if not match:
@@ -35,7 +36,7 @@ class UMLParser:
 
     @staticmethod
     def parse_operation(line: str) -> UMLOperation:
-        operation_pattern = re.compile(r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?:[:]\s*(?P<return_type>[\w<>, ]+))?$')
+        operation_pattern = re.compile(r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?::\s*(?P<return_type>[\w<>, ]+))?$')
 
         match = operation_pattern.match(line)
         if not match:
@@ -101,26 +102,13 @@ class UMLParser:
         return enums
     
     @staticmethod
-    def parse_plantuml_relations(uml_text: str, classes: List[UMLClass], enums: List[UMLEnum]) -> List[UMLRelation]:
-        relations: List[UMLRelation] = []
-        class_lookup = {cls.name: cls for cls in classes}
-        enum_lookup = {enu.name: enu for enu in enums}
-        element_lookup = class_lookup | enum_lookup
-        type_map = {
-                '--': RelationType.ASSOCIATION,
-                'o--': RelationType.AGGREGATION,
-                '--o': RelationType.AGGREGATION,
-                '*--': RelationType.COMPOSITION,
-                '--*': RelationType.COMPOSITION
-            }
-        
-        # 1) Binäre Relationen mit Typbestimmung (assoziation, aggregation, komposition)
-        # 1aa) A m1 -> m2 B
-        bin_pattern1 = re.compile(
+    def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+        # 1.1.1) A m1 -> m2 B
+        bin_pattern_1 = re.compile(
             r'(\w+)\s+"([^"]*)"\s+(--|--\*|--o)\s+"([^"]*)"\s+(\w+)',
             re.MULTILINE
         )
-        for match in bin_pattern1.finditer(uml_text):
+        for match in bin_pattern_1.finditer(uml_text):
             raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
             a = raw_a
             b = raw_b
@@ -137,14 +125,14 @@ class UMLParser:
                     d_multiplicity = m2
                 )
                 relations.append(relation)
-        
-        # 1ab) Einfache Relationen ohne Multiplikitäten: A -> B
-        bin_pattern_simple1 = re.compile(
+
+        # 1.1.2) A -> B
+        bin_pattern_2 = re.compile(
             r'(\w+)\s+(--|--\*|--o)\s+(\w+)',
             re.MULTILINE
         )
 
-        for match in bin_pattern_simple1.finditer(uml_text):
+        for match in bin_pattern_2.finditer(uml_text):
             raw_a, raw_type, raw_b = match.groups()
             a = raw_a
             b = raw_b
@@ -159,12 +147,14 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
 
-        # 1ba) A <- B
-        bin_pattern2 = re.compile(
+    @staticmethod
+    def parse_relation_right_to_left(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+        # 1.2.1) A m1 <- m2 B
+        bin_pattern_3 = re.compile(
             r'(\w+)\s+"([^"]*)"\s+(--|\*--|o--)\s+"([^"]*)"\s+(\w+)',
             re.MULTILINE
         )
-        for match in bin_pattern2.finditer(uml_text):
+        for match in bin_pattern_3.finditer(uml_text):
             raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
             a = raw_a
             b = raw_b
@@ -182,14 +172,14 @@ class UMLParser:
                 )                
                 if relation not in relations:
                     relations.append(relation)
-
-        # 1bb) Einfache Relationen ohne Multiplikitäten: A <- B
-        bin_pattern_simple1 = re.compile(
-            r'(\w+)\s+(--|\*--|--o)\s+(\w+)',
+        
+        # 1.2.2) A <- B
+        bin_pattern_4 = re.compile(
+            r'(\w+)\s+(--|\*--|o--)\s+(\w+)',
             re.MULTILINE
         )
 
-        for match in bin_pattern_simple1.finditer(uml_text):
+        for match in bin_pattern_4.finditer(uml_text):
             raw_a, raw_type, raw_b = match.groups()
             a = raw_a
             b = raw_b
@@ -204,26 +194,11 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
 
-        # 2a) Assoziationsklassen: (A, B) .. C
-        assoc_pattern1 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.\.\s*(\w+)')
-        for match in assoc_pattern1.finditer(uml_text):
-            raw_a, raw_b, raw_c = match.groups()
-            a = raw_a
-            b = raw_b
-            c = raw_c
-            if all(x in element_lookup for x in (a, b, c)):
-                rel = None
-                for r in relations:
-                    if r.equals(UMLRelation(RelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
-                        rel = r
-                        break
-                relation = UMLRelation(type = RelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
-                if relation not in relations:
-                    relations.append(relation)
-
-        # 2b) Assoziationsklassen: C .. (A, B)
-        assoc_pattern2 = re.compile(r'(\w+)\s*\.\.\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
-        for match in assoc_pattern2.finditer(uml_text):
+    @staticmethod 
+    def parse_asso_class_left_to_right(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+        
+        assoc_pattern_1 = re.compile(r'(\w+)\s*\.\.\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
+        for match in assoc_pattern_1.finditer(uml_text):
             raw_c, raw_a, raw_b = match.groups()
             a = raw_a
             b = raw_b
@@ -238,4 +213,53 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
 
+    @staticmethod
+    def parse_asso_class_right_to_left(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+        # 2.2) (A, B) .. C
+        assoc_pattern_2 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.\.\s*(\w+)')
+        for match in assoc_pattern_2.finditer(uml_text):
+            raw_a, raw_b, raw_c = match.groups()
+            a = raw_a
+            b = raw_b
+            c = raw_c
+            if all(x in element_lookup for x in (a, b, c)):
+                rel = None
+                for r in relations:
+                    if r.equals(UMLRelation(RelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
+                        rel = r
+                        break
+                relation = UMLRelation(type = RelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
+                if relation not in relations:
+                    relations.append(relation)
+
+    @staticmethod
+    def parse_plantuml_relations(uml_text: str, classes: List[UMLClass], enums: List[UMLEnum]) -> List[UMLRelation]:
+        relations: List[UMLRelation] = []
+        class_lookup: Dict[str, UMLClass] = {cls.name: cls for cls in classes}
+        enum_lookup: Dict[str, UMLEnum] = {enu.name: enu for enu in enums}
+        element_lookup = class_lookup | enum_lookup
+        type_map = {
+                '--': RelationType.ASSOCIATION,
+                'o--': RelationType.AGGREGATION,
+                '--o': RelationType.AGGREGATION,
+                '*--': RelationType.COMPOSITION,
+                '--*': RelationType.COMPOSITION
+            }
+        
+        # 1) binary relation with type matching (assoziation, aggregation, komposition)
+        # 1.1) ->
+        # 1.1.1) A m1 -> m2 B
+        # 1.1.2) A -> B
+        UMLParser.parse_relation_left_to_right(uml_text, type_map, element_lookup, relations)
+        
+        # 1.2) <-
+        # 1.2.1) A m1 <- m2 B
+        # 1.2.2) A <- B
+        UMLParser.parse_relation_right_to_left(uml_text, type_map, element_lookup, relations)
+        
+        # 2.) association class
+        # 2.1) C .. (A, B)
+        UMLParser.parse_asso_class_left_to_right(uml_text, type_map, element_lookup, relations)
+        # 2.2) (A, B) .. C
+        UMLParser.parse_asso_class_right_to_left(uml_text, type_map, element_lookup, relations)
         return relations

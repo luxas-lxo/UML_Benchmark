@@ -6,7 +6,7 @@ class ScadsModel:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
     
     #@cache.cached(data_ex=timedelta(days=30), no_data_ex=timedelta(hours=1), prepended_key_attr='model_name')
-    def inference(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
+    def inference(self, prompt: str, system_prompt: str = None) -> str:
         
         messages = []
         if system_prompt and self.model_name != "openGPT-X/Teuken-7B-instruct-research-v0.4":

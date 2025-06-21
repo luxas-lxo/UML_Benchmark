@@ -1,10 +1,10 @@
 import json
+from pathlib import Path
 
 # API-Details
-#API_KEY = "<your API-Key>"
-API_KEY = "sk-0ylx4l359rhi86uubhq2rerwrqmcdr3ecmh0u6domwpm1vrzpqzcqd9ydoo7vmb6fac3s21bfgisnjs4x0llddnablud83wzqkir"
-#BASE_URL = "https://chat-ai.academiccloud.de/v1"
-BASE_URL = "https://llm.scads.ai/v1"
+API_KEY = "<your API-Key>"
+BASE_URL_AC = "https://chat-ai.academiccloud.de/v1"
+BASE_URL_SC = "https://llm.scads.ai/v1"
 
 # Liste von Modellen
 model_configs = [
@@ -28,10 +28,10 @@ for config in model_configs:
     model = ScadsModel(
         model_name=config["id"],
         api_key=API_KEY,
-        base_url=BASE_URL
+        base_url=BASE_URL_SC
     )
     # Dateipfad für Ausgaben
-    output_path = f"LLM_response_generation\{config['filename']}"
+    output_path = Path("LLM_response_generation") / config['filename']
 
     # Erzeuge Antworten und schreibe sie in die Datei
     with open(output_path, "w", encoding="utf-8") as out_file:

@@ -5,7 +5,9 @@ import spacy
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
 import re
+import logging
 
+logger = logging.getLogger(__name__)
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 nlp = spacy.load('en_core_web_lg')
 brown_ic = wordnet_ic.ic('ic-brown.dat')
@@ -49,8 +51,8 @@ class SemanticCheck:
                     try:
                         score = max((s1.lin_similarity(s2, brown_ic) or 0) for s1 in syns1 for s2 in syns2)
                         max_score = max(max_score, score)
-                    except:
-                        continue  
+                    except Exception as e:
+                        logger.warning(f"error in lin_score with '{word1}' and '{word2}': {e}")  
         return max_score
 
     @staticmethod
