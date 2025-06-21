@@ -2,6 +2,8 @@ from UML_model.uml_element import UMLElement
 from grading.grade_reference import GradeReference
 
 from enum import Enum
+import textwrap
+import shutil
 
 class RelationType(Enum):
     ASSOCIATION = "association"
@@ -11,19 +13,31 @@ class RelationType(Enum):
     UNKNOWN = "unknown"
 
 class UMLRelation(UMLElement, GradeReference):
+    #TODO: Rollen entnehmen und verarbeiten -> repr, plantuml, equals, hash, eq
+    # aktuell bei gleicher verbindung trotzdem eingetragen???
     def __init__(self, type: RelationType, source: UMLElement, destination: UMLElement, s_multiplicity: str = "", d_multiplicity: str = ""):
-        self.type = type
-        self.source = source
-        self.destination = destination
-        self.s_multiplicity = s_multiplicity
-        self.d_multiplicity = d_multiplicity
-        self.directed = self.type != RelationType.ASSOCIATION
-        self.name = f"({source.name}, {destination.name})"
-        
+        self.type: RelationType = type
+        self.source: UMLElement = source
+        self.destination: UMLElement = destination
+        #TODO: multiplicity as enum class
+        self.s_multiplicity: str = s_multiplicity
+        self.d_multiplicity: str = d_multiplicity
+        self.directed: bool = self.type != RelationType.ASSOCIATION
+        super().__init__(f"({self.source.name}, {self.destination.name})")
 
     def __repr__(self):
-        #return f"UMLRelation({self.source} [{self.s_multiplicity}] -{self.type.name}- [{self.d_multiplicity}] {self.destination})"
-        return f"UMLRelation({self.source}, {self.destination})"
+        return f"UMLRelation({self.source}, {self.destination}): source multiplicity {self.s_multiplicity} -{self.type.name}- destination multiplicity {self.d_multiplicity if self.d_multiplicity != '' else '_'}"
+    
+    def to_plantuml(self):
+        type_map = {
+            RelationType.ASSOCIATION: "--",
+            RelationType.ASSOCIATION_LINK: "..",
+            RelationType.AGGREGATION: "--o",
+            RelationType.COMPOSITION: "--*"
+        }
+        symbol = type_map.get(self.type, "--")
+        return f"{self.source.name} {'\"' + self.s_multiplicity + '\"' if symbol != '..' else ''} {symbol} {'\"' + self.d_multiplicity + '\"' if symbol != '..' else ''} {self.destination.name}"
+
     
     def __eq__(self, other):
         if not isinstance(other, UMLRelation):
@@ -52,12 +66,6 @@ class UMLRelation(UMLElement, GradeReference):
 
         return False
   
-    def __hash__(self):
-        if self.directed:
-            return hash((self.type, self.source, self.destination))
-        else:
-            return hash((self.type, frozenset([self.source, self.destination])))
-        
     #Im Unterschied zu eq ohne Multiplizitäten
     def equals(self, other):
         if not isinstance(other, UMLRelation):
@@ -81,4 +89,11 @@ class UMLRelation(UMLElement, GradeReference):
             return reverse_direction
 
         return False
+      
+    def __hash__(self):
+        if self.directed:
+            return hash((self.type, self.source, self.destination))
+        else:
+            return hash((self.type, frozenset([self.source, self.destination])))
+               
     

@@ -115,7 +115,7 @@ class GradeModel:
                 #TODO: Operation match
                 pass
             else:
-                NotImplementedError("FeatureType could not be handled")
+                return NotImplemented
                 
 
         

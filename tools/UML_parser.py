@@ -1,23 +1,73 @@
-from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability, UMLDataType
 from UML_model.uml_relation import UMLRelation, RelationType
 from UML_model.uml_enum import UMLEnum, UMLValue
+
 import re
 from typing import List
 
-
 class UMLParser:
-    #TODO: vorm normalisieren testen ob syntax konventionen eingehalten
-    # normalisieren ist wichtig für den semantik check
+    
     @staticmethod
-    def normalize_identifier(identifier: str) -> str:
-        # Insert space before any uppercase letter that follows a lowercase letter or a number
-        s = re.sub(r'(?<=[a-z0-9])([A-Z])', r' \1', identifier)
-        # Insert space before sequences of uppercase letters followed by lowercase letters (acronyms like XMLParser)
-        s = re.sub(r'(?<=[A-Z])([A-Z][a-z])', r' \1', s)
-        # Replace underscores with spaces
-        s = s.replace("_", " ")
-        s = s.lower()
-        return s
+    def parse_attribute(line: str) -> UMLAttribute:
+        attr_pattern = re.compile(r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?:[:]\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$')
+
+        match = attr_pattern.match(line)
+        if not match:
+            raise ValueError(f"Invalid attribute format: '{line}'")
+
+        vis_symbol = match.group("visibility") or ""
+        vis_map = {
+            '+': UMLVisability.PUBLIC,
+            '-': UMLVisability.PRIVATE,
+            '#': UMLVisability.PROTECTED,
+            '~': UMLVisability.PACKAGE
+        }
+        visability = vis_map.get(vis_symbol.strip(), UMLVisability.UNKNOWN)
+
+        name = match.group("name")
+        derived = bool(match.group("derived"))
+        datatype_str = match.group("type") or "unknown"
+        datatype = UMLDataType.from_string(datatype_str)
+        initial = match.group("initial") or ""
+
+        attr = UMLAttribute(name=name, datatype=datatype, initial=initial.strip(), visability=visability, derived=derived)
+        return attr
+
+    @staticmethod
+    def parse_operation(line: str) -> UMLOperation:
+        operation_pattern = re.compile(r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?:[:]\s*(?P<return_type>[\w<>, ]+))?$')
+
+        match = operation_pattern.match(line)
+        if not match:
+            raise ValueError(f"Invalid operation format: '{line}'")
+        
+        vis_symbol = match.group("visibility") or ""
+        vis_map = {
+            '+': UMLVisability.PUBLIC,
+            '-': UMLVisability.PRIVATE,
+            '#': UMLVisability.PROTECTED,
+            '~': UMLVisability.PACKAGE
+        }
+        visability = vis_map.get(vis_symbol.strip(), UMLVisability.UNKNOWN)
+
+        name = match.group("name")
+        param_str = match.group("params").strip()
+        return_type_str = (match.group("return_type") or "void").strip()
+
+        # Parameter parsen
+        params = {}
+        if param_str:
+            for param in param_str.split(","):
+                param = param.strip()
+                if ":" in param:
+                    pname, ptype = map(str.strip, param.split(":", 1))
+                    params[pname] = UMLDataType.from_string(ptype)
+                else:
+                    params[param] = UMLDataType.UNKNOWN
+
+        # Rückgabetyp(en) parsen
+        return_types = [UMLDataType.from_string(t.strip()) for t in return_type_str.split(",")]
+        return UMLOperation(name=name, params=params, return_types=return_types, visability=visability)
 
     @staticmethod
     def parse_plantuml_classes(uml_text: str) -> List[UMLClass]:
@@ -27,11 +77,11 @@ class UMLParser:
         classes = []
 
         for match in class_pattern.finditer(uml_text):
-            name = UMLParser.normalize_identifier(match.group(1))
+            name = match.group(1)
             body = match.group(2) or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            attributes = [UMLAttribute(UMLParser.normalize_identifier(line)) for line in lines if "()" not in line]
-            operations = [UMLOperation(UMLParser.normalize_identifier(line)) for line in lines if "()" in line]
+            attributes = [UMLParser.parse_attribute(line) for line in lines if "(" not in line and ")" not in line]
+            operations = [UMLParser.parse_operation(line) for line in lines if "(" in line and ")" in line]
             classes.append(UMLClass(name, attributes, operations)) 
 
         return classes
@@ -42,10 +92,10 @@ class UMLParser:
         enums = []
 
         for match in class_pattern.finditer(uml_text):
-            name = UMLParser.normalize_identifier(match.group(1))
+            name = match.group(1)
             body = match.group(2) or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            values = [UMLValue(UMLParser.normalize_identifier(line)) for line in lines]
+            values = [UMLValue(line) for line in lines]
             enums.append(UMLEnum(name, values)) 
 
         return enums
@@ -72,8 +122,8 @@ class UMLParser:
         )
         for match in bin_pattern1.finditer(uml_text):
             raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
+            a = raw_a
+            b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
@@ -96,8 +146,8 @@ class UMLParser:
 
         for match in bin_pattern_simple1.finditer(uml_text):
             raw_a, raw_type, raw_b = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
+            a = raw_a
+            b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
@@ -116,8 +166,8 @@ class UMLParser:
         )
         for match in bin_pattern2.finditer(uml_text):
             raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
+            a = raw_a
+            b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
@@ -141,8 +191,8 @@ class UMLParser:
 
         for match in bin_pattern_simple1.finditer(uml_text):
             raw_a, raw_type, raw_b = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
+            a = raw_a
+            b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
@@ -158,9 +208,9 @@ class UMLParser:
         assoc_pattern1 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.\.\s*(\w+)')
         for match in assoc_pattern1.finditer(uml_text):
             raw_a, raw_b, raw_c = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
-            c = UMLParser.normalize_identifier(raw_c)
+            a = raw_a
+            b = raw_b
+            c = raw_c
             if all(x in element_lookup for x in (a, b, c)):
                 rel = None
                 for r in relations:
@@ -175,9 +225,9 @@ class UMLParser:
         assoc_pattern2 = re.compile(r'(\w+)\s*\.\.\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
         for match in assoc_pattern2.finditer(uml_text):
             raw_c, raw_a, raw_b = match.groups()
-            a = UMLParser.normalize_identifier(raw_a)
-            b = UMLParser.normalize_identifier(raw_b)
-            c = UMLParser.normalize_identifier(raw_c)
+            a = raw_a
+            b = raw_b
+            c = raw_c
             if all(x in element_lookup for x in (a, b, c)):
                 rel = None
                 for r in relations:

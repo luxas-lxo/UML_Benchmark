@@ -1,15 +1,30 @@
 from UML_model.uml_class import UMLClass
+from tools.semantic_check import SemanticCheck
+from tools.syntactic_check import SyntacticCheck
 
 from typing import Tuple
 
 class ContentCheck:
 
     @staticmethod
-    def content_match(class1: UMLClass, class2: UMLClass, threshold: float = 0.6) -> Tuple[bool, float]:
-        total = len(class1.attributes) + len(class1.operations)
+    def content_match(inst_class: UMLClass, stud_class: UMLClass, threshold: float = 0.5) -> Tuple[bool, float]:
+        total = len(inst_class.attributes) + len(inst_class.operations)
         if total == 0:
             return (False, 0)
-        match_count = sum(1 for a in class1.attributes if a in class2.attributes)
-        match_count += sum(1 for op in class1.operations if op in class2.operations)
+        
+        match_count = 0
+
+        for inst_att in inst_class.attributes:
+            for stud_att in stud_class.attributes:
+                if SyntacticCheck.syntactic_match(inst_att.name, stud_att.name)[0] or SemanticCheck.semantic_match(inst_att.name, stud_att.name)[0]:
+                    match_count += 1
+                    break
+
+        for inst_opr in inst_class.operations:
+            for stud_opr in stud_class.operations:
+                if SyntacticCheck.syntactic_match(inst_opr.name, stud_opr.name)[0] or SemanticCheck.semantic_match(inst_opr.name, stud_opr.name)[0]:
+                    match_count += 1
+                    break
+
         similarity = match_count / total
         return (similarity >= threshold, similarity)

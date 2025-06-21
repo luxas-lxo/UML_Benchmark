@@ -13,12 +13,16 @@ class UMLValue(GradeReference):
 
 class UMLEnum(UMLElement, GradeReference):
     def __init__(self, name: str, values: List[UMLValue]):
-        self.name = name
-        self.values = values
+        super().__init__(name)
+        self.values: List[UMLValue] = values
         self.relations: List[UMLRelation] = []
 
-    def __repr__(self):
-        return f"UMLEnum({self.name})"
+    def __repr__(self): 
+        return f"UMLEnum({self.name}): [{', '.join(v.name for v in self.values)}]"
+    
+    def to_plantuml(self) -> str:
+        body = '\n\t'.join(v.name for v in self.values)
+        return f"enum {self.name} {{\n\t{body}\n}}"
     
     def add_relation(self, relation: UMLRelation):
         if relation not in self.relations:

@@ -4,15 +4,26 @@ from sentence_transformers import SentenceTransformer
 import spacy
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
+import re
 
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 nlp = spacy.load('en_core_web_lg')
 brown_ic = wordnet_ic.ic('ic-brown.dat')
 
 class SemanticCheck:
+    @staticmethod
+    def normalize_identifier(identifier: str) -> str:
+        # Insert space before any uppercase letter that follows a lowercase letter or a number
+        s = re.sub(r'(?<=[a-z0-9])([A-Z])', r' \1', identifier)
+        # Insert space before sequences of uppercase letters followed by lowercase letters (acronyms like XMLParser)
+        s = re.sub(r'(?<=[A-Z])([A-Z][a-z])', r' \1', s)
+        # Replace underscores with spaces
+        s = s.replace("_", " ")
+        s = s.lower()
+        return s
 
     @staticmethod
-    def wup_score(w1, w2):
+    def wup_score(w1: str, w2: str):
         words1 = w1.split()
         words2 = w2.split()
         max_score = 0
@@ -25,7 +36,7 @@ class SemanticCheck:
         return max_score
 
     @staticmethod
-    def lin_score(w1, w2):
+    def lin_score(w1: str, w2: str):
         words1 = w1.split()
         words2 = w2.split()
         max_score = 0
@@ -43,7 +54,7 @@ class SemanticCheck:
         return max_score
 
     @staticmethod
-    def transformer_score(w1, w2):
+    def transformer_score(w1: str, w2: str):
         wordlist = [w1, w2]
         embeddings = model.encode(wordlist)
         similarity = model.similarity(embeddings[0], embeddings[1]).item()
@@ -58,6 +69,8 @@ class SemanticCheck:
 
     @staticmethod
     def semantic_match(word1: str, word2: str, threshold: float = 0.7) -> Tuple[bool, float]:
+        word1 = SemanticCheck.normalize_identifier(word1)
+        word2 = SemanticCheck.normalize_identifier(word2)
         wup = SemanticCheck.wup_score(word1, word2)
         lin = SemanticCheck.lin_score(word1, word2)
         w2v = SemanticCheck.word2vec_score(word1, word2)
