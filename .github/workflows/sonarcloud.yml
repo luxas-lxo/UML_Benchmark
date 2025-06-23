@@ -41,9 +41,5 @@ jobs:
             -Dsonar.organization=luxas-lxo
             -Dsonar.sources=.
             -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.exclusions=**
-              /tests/**
-              ,**/*_test.py
-              ,z_main_test.py
-              ,LLM_response_generation/**
+            -Dsonar.exclusions=**/tests/**,**/*_test.py,z_main_test.py,LLM_response_generation/**
             -Dsonar.python.coverage.reportPaths=coverage.xml

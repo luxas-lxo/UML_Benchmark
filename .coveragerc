@@ -1,6 +1,5 @@
 [run]
 source =
-    LLM_response_generation
     UML_model
     tools
     models
@@ -10,9 +9,10 @@ source =
 [report]
 omit =
     */tests/*
+    */*_test.py
+    */z_main_test.py
+    */LLM_response_generation/*
     */__init__.py
-    z_main_test.py
-    test_*.py
 
 exclude_lines =
     if __name__ == .__main__.:
