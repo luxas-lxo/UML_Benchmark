@@ -1,65 +1,22 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from UML_model.uml_model import UMLModel
 from plantuml_eval.eval_classes import ClassComperator
 from grading.grade_metamodel import GradeModel, StructuralFeature
 
-plantuml_text1 = """
-@startuml
-class Alter
-class Brunnen
-class Clown
-
-Alter -- Brunnen
-Alter -- Clown
-@enduml
-"""
-
-plantuml_text2 = """
-@startuml
-class Alter {
-    #lol: int = "hallo"
-}
-class Blunnen
-class Z
-
-Alter -- Blunnen
-Alter -- Z
-@enduml
-
-"""
-"""
-uml_model1 = UMLModel(plantuml_str=plantuml_text1)
-uml_model2 = UMLModel(plantuml_str=plantuml_text2)
-print(repr(uml_model1))
-print(repr(uml_model2))
-print(repr(uml_model2.find_class("AlTer").find_attribute("LOL")))
-"""
-
-"""
-class_grades = EObjectGrade()
-class_grades.points = 2.0
-
-attr_grades = EStructuralFeatureGrade()
-attr_grades.points = 1.0
-class_grades.structuralgrades.append(attr_grades)
-
-print(f"Class Grade: {class_grades.points}")
-print(f"Attribute Grade: {class_grades.structuralgrades[0].points}")
-"""
-"""  
-grades = GradeModel()
-grades.class_points["piece"] = 1.0
-grades.class_points["position"] = 1.0
-grades.class_points["square"] = 1.0
-grades.class_points["move"] = 1.0
-grades.attribute_points["position"] = {"/check": 1.0, "/checkmate": 1.0, "/stalemate": 1.0}
-grades.attribute_points["square"] = {"file": 0.5, "rank": 0.5}
-grades.operation_points["position"] = {"executeMove()": 0.5, "capturePiece()": 0.5}
-""" 
+plantuml_str = """
+        @startuml
+        class TestClass1
+        
+        enum TestEnum1 {
+            VALUE1
+            VALUE2
+        }
+        
+        TestClass1 --o TestEnum1 : relation 
+        
+        @enduml
+        """
+uml_model = UMLModel(plantuml_str)
+uml_model.print_details()
 
 plant_uml_inst = "@startuml \nclass square { \nfile \nrank \n} \nclass move \nclass position { \n/check \n/checkmate \n/stalemate \nexecuteMove() \ncapturePiece() \n} \nclass piece \nenum color { \nBLACK \nWHITE \n} \nenum type as \"type of piece\" { \nPAWN \nKNIGHT \nBISHOP \nROOK \nQUEEN \nKING \n} \n} \nsquare \"*\" -- \"*\" square : \"from / to\" \n(square, square) .. move \nposition \"*\" -- \"*\" piece \n(position, piece) .. square \nposition \" \" -- \"1\" color:  \"whoseTurn\" \nposition \" \" -- \"0..*\" move: \"legalMoves\" \nmove \" \" o-- \"0..1\" type: \"transformed\" \npiece \" \" o-- \"1\" color: \"color\" \npiece \" \" o-- \"1\" type: \"type\" \n@enduml"
 instructor_model = UMLModel(plant_uml_inst)
@@ -68,11 +25,6 @@ instructor_model = UMLModel(plant_uml_inst)
     #print(e)
 
 #print(repr(instructor_model.find_element("(type, move)")))
-
-
-print("\n")
-print("INST ENDE")
-print("\n")
 
 #grade_model_ss2015 = GradeModel(instructor_model)
 #grade_model_ss2015.add_class_grade_structure("square", 1.0, 0.5)
@@ -87,37 +39,21 @@ for obj in grade_model_ss2015.classes:
 #"""
 plant_uml_stud = "@startuml\nskinparam Linetype ortho\nhide empty attributes\nhide empty methods\n\nclass ChessPiece {\n    pieceColor\n    pieceType\n}\n\nclass Square {\n    +file: int = 0\n    rank\n    piece\n}\n\nclass Move {\n    fromSquare\n    toSquare\n    piece\n}\n\nclass Position {\n    pieces\n    turn\n    /check\n    /stalemate\n    /checkmate\n    executeMove(move:Int, test)\n    capturePiece(piece)\n}\n\nclass ChessGame {\n    currentPosition\n    moves\n}\n\nenum PieceColor {\n    black\n    white\n}\n\nenum PieceType {\n    king\n    queen\n    rook\n    bishop\n    knight\n    pawn\n}\n\nChessPiece \"1\" -- \"1\" PieceColor: pieceColor\nChessPiece \"1\" -- \"1\" PieceType: pieceType\nSquare \"64\" -- \"0..1\" ChessPiece: piece\nMove \"1\" -- \"1\" Square: fromSquare\nMove \"1\" -- \"1\" Square: toSquare\nMove \"1\" -- \"1\" ChessPiece: piece\nPosition \"1\" -- \"64\" Square: squares\nPosition \"1\" -- \"1\" PieceColor: turn\nChessGame \"1\" -- \"1\" Position: currentPosition\nChessGame \"1\" -- \"*\" Move: moves\n\n@enduml"
 student_model = UMLModel(plant_uml_stud)
-#print(student_model.to_plantuml())
 
-#"""
-
-#print(f"square rel ends: {instructor_model.class_list[0].get_relation_ends()}")
-
-#"""
 matches, missing = ClassComperator.compare_classes(instructor_model, student_model)
-print("Matches:", matches)
-print("\n")
-print("Missing:", missing)
-print("\n")
-print("COMPARE CLASSES END")
-print("\n")
+matches_str = {str(k): str(v) for k, v in matches.items()}
+print(f"Matches: {matches_str}")
+print(f"Missing: {missing}")
 matches_att, misspl_att, matches_opr, misspl_opr = ClassComperator.compare_content(instructor_model, student_model, matches)
-print("Matches Att:", matches_att)
-print("\n")
-print("Missplaced Att:", misspl_att)
-print("\n")
-print("Matches Opr:", matches_opr)
-print("\n")
-print("Missplaced Opr:", misspl_opr)
-print("\n")
-print("COMPARE CONTENT END")
-print("\n")
+matches_att_str = {str(k): str(v) for k, v in matches_att.items()}
+misspl_att_str = {str(k): str(v) for k, v in misspl_att.items()}
+matches_opr_str = {str(k): str(v) for k, v in matches_opr.items()}
+misspl_opr_str = {str(k): str(v) for k, v in misspl_opr.items()}
+print(f"Matches Att: {matches_att_str}")
+print(f"Missplaced Att: {misspl_att_str}")
+print(f"Matches Opr: {matches_opr_str}")
+print(f"Missplaced Opr: {misspl_opr_str}")
 
-"""
-for m, n in matches_opr.items():
-    print(f"{m.name}, {m.params}, {m.reference}, {m.return_types}, {m.visability}")
-    print(f"{n.name}, {n.params}, {n.reference}, {n.return_types}, {n.visability}")
-"""
 #"""
 """
 Klassen:

@@ -8,6 +8,10 @@ from UML_model.uml_model import UMLModel
 
 from enum import Enum
 from typing import List, Dict, Optional
+import logging
+
+logger = logging.getLogger("plantuml_eval.eval_classes")
+logger.setLevel(logging.INFO)
 
 
 class MatchType(Enum):
@@ -23,6 +27,12 @@ class Match:
         self.to_inst = to_inst
         self.match_type = match_type
         self.score = score
+    
+    def __repr__(self):
+        return f"Match({self.matched}, {self.to_inst}): match type {self.match_type} score {self.score}"
+    
+    def __str__(self):
+        return f"Match({self.matched.name}, {self.to_inst.name})"
 
 
 class ClassComperator:
@@ -50,6 +60,7 @@ class ClassComperator:
     #1: procedure COMPARECLASS(InstructorModel,StudentModel)
     @staticmethod
     def compare_classes(instructor_model: UMLModel, student_model: UMLModel):
+        logger.info("starting compare classes method")
         possible_matches: Dict[UMLClass, List[Match]] = {}  
         class_match_map: Dict[UMLClass, UMLClass] = {}
         miss_class_list: List[UMLClass] = []
@@ -112,6 +123,7 @@ class ClassComperator:
                 #22: missClassList.add(Ci)
                 final_miss_class_list.append(ci)  
         
+        logger.info("finished compare classes method")
         #23: return classMatchMap, missClassList
         return class_match_map, final_miss_class_list   
 
@@ -119,6 +131,7 @@ class ClassComperator:
     #1: procedure COMPARECONTENT(InstructorModel, StudentModel, classMatchMap) 
     @staticmethod
     def compare_content(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass]):
+        logger.info("starting compare content method")
         possible_attr_matches: Dict[UMLAttribute, List[Match]] = {}
         attr_match_map: Dict[UMLAttribute, UMLAttribute] = {}
         possible_missplaced_attr_matches: Dict[UMLAttribute, List[Match]] = {}
@@ -159,7 +172,7 @@ class ClassComperator:
                         #9:matchedAttrMap.put(As, Ai) 
                         possible_attr_matches[a_i].append(Match(a_s, a_i, MatchType.SyntacticMatch, res[1]))
                     #10:else if Ci is superClass of classMatchMap.get(Cs) and Ai is not private then 
-                    elif c_i == reversed_class_match_map.get(c_s).super_class and a_i.visability != UMLVisability.PRIVATE:
+                    elif c_i == reversed_class_match_map.get(c_s).super_class and a_i.visibility != UMLVisability.PRIVATE:
                         #11:matchedAttrMap.put(As, Ai)
                         possible_attr_matches[a_i].append(Match(a_s, a_i, MatchType.SyntacticMatch, res[1]))
                 #7:if Ai is synatax or semtantic match for As then 
@@ -169,7 +182,7 @@ class ClassComperator:
                         #9:matchedAttrMap.put(As, Ai) 
                         possible_attr_matches[a_i].append(Match(a_s, a_i, MatchType.SemanticMatch, res[1]))
                     #10:else if Ci is superClass of classMatchMap.get(Cs) and Ai is not private then
-                    elif c_i == reversed_class_match_map.get(c_s).super_class and a_i.visability != UMLVisability.PRIVATE:
+                    elif c_i == reversed_class_match_map.get(c_s).super_class and a_i.visibility != UMLVisability.PRIVATE:
                         #11:matchedAttrMap.put(As, Ai)
                         possible_attr_matches[a_i].append(Match(a_s, a_i, MatchType.SemanticMatch, res[1]))
             #**added additionally**
@@ -221,7 +234,7 @@ class ClassComperator:
                         #22:matchedOperMap.put(Os, Oi) 
                         possible_oper_matches[oi].append(Match(os, oi, MatchType.SyntacticMatch, res[1]))
                     #23:else if Ci is superClass of classMatchMap.get(Cs) and Oi is not private then 
-                    elif ci == reversed_class_match_map.get(cs).super_class and oi.visability != UMLVisability.PRIVATE:
+                    elif ci == reversed_class_match_map.get(cs).super_class and oi.visibility != UMLVisability.PRIVATE:
                         #24:matchedOperMap.put(Os, Oi) 
                         possible_oper_matches[oi].append(Match(os, oi, MatchType.SyntacticMatch, res[1]))
                 #20:if Oi.synMatch(Os) or Oi.semanticMatch(Os) then
@@ -231,7 +244,7 @@ class ClassComperator:
                         #22:matchedOperMap.put(Os, Oi) 
                         possible_oper_matches[oi].append(Match(os, oi, MatchType.SemanticMatch, res[1]))
                     #23:else if Ci is superClass of classMatchMap.get(Cs) and Oi is not private then
-                    elif ci == reversed_class_match_map.get(cs).super_class and oi.visability != UMLVisability.PRIVATE:
+                    elif ci == reversed_class_match_map.get(cs).super_class and oi.visibility != UMLVisability.PRIVATE:
                         #24:matchedOperMap.put(Os, Oi)
                         possible_oper_matches[oi].append(Match(os, oi, MatchType.SemanticMatch, res[1]))
             #**added additionally**
@@ -260,6 +273,7 @@ class ClassComperator:
                 best_match = ClassComperator.find_best_content_match(oi, possible_missplaced_oper_matches[oi])
                 misplaced_oper_map[oi] = best_match.matched
 
+        logger.info("finished compare content method")
         #29: return matchedAttrMap, misplaceAttrMap, matchedOperMap, misplaceOperMap
         return attr_match_map, misplaced_attr_map, oper_matched_map, misplaced_oper_map
 

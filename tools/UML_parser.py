@@ -1,20 +1,32 @@
 from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability, UMLDataType
-from UML_model.uml_relation import UMLRelation, RelationType
+from UML_model.uml_relation import UMLRelation, UMLRelationType
 from UML_model.uml_enum import UMLEnum, UMLValue
 from UML_model.uml_element import UMLElement
 
 import re
+import regex
 from typing import List, Dict
+import logging 
+
+logger = logging.getLogger("uml.parser")
+logger.setLevel(logging.INFO)
 
 class UMLParser:
     
     @staticmethod
     def parse_attribute(line: str) -> UMLAttribute:
-        attr_pattern = re.compile(r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$')
 
-        match = attr_pattern.match(line)
+        attr_pattern = regex.compile(
+            r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$'
+        )
+
+        try:
+            match = attr_pattern.match(line, timeout = 10)  
+        except regex.TimeoutError:
+            raise ValueError(f"Regex timeout beim Parsen der Attribut-Zeile: '{line}'")
+
         if not match:
-            raise ValueError(f"Invalid attribute format: '{line}'")
+            raise ValueError(f"Ungültiges Attribut-Format: '{line}'")
 
         vis_symbol = match.group("visibility") or ""
         vis_map = {
@@ -31,17 +43,30 @@ class UMLParser:
         datatype = UMLDataType.from_string(datatype_str)
         initial = match.group("initial") or ""
 
-        attr = UMLAttribute(name=name, datatype=datatype, initial=initial.strip(), visability=visability, derived=derived)
-        return attr
+        return UMLAttribute(
+            name=name,
+            data_type=datatype,
+            initial=initial.strip(),
+            visibility=visability,
+            derived=derived
+        )
 
     @staticmethod
     def parse_operation(line: str) -> UMLOperation:
-        operation_pattern = re.compile(r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?::\s*(?P<return_type>[\w<>, ]+))?$')
+        import regex
 
-        match = operation_pattern.match(line)
+        operation_pattern = regex.compile(
+            r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?::\s*(?P<return_type>[\w<>, ]+))?$'
+        )
+
+        try:
+            match = operation_pattern.match(line, timeout = 10)
+        except regex.TimeoutError:
+            raise ValueError(f"Regex timeout beim Parsen der Operation-Zeile: '{line}'")
+
         if not match:
-            raise ValueError(f"Invalid operation format: '{line}'")
-        
+            raise ValueError(f"Ungültiges Operation-Format: '{line}'")
+
         vis_symbol = match.group("visibility") or ""
         vis_map = {
             '+': UMLVisability.PUBLIC,
@@ -55,7 +80,6 @@ class UMLParser:
         param_str = match.group("params").strip()
         return_type_str = (match.group("return_type") or "void").strip()
 
-        # Parameter parsen
         params = {}
         if param_str:
             for param in param_str.split(","):
@@ -66,15 +90,14 @@ class UMLParser:
                 else:
                     params[param] = UMLDataType.UNKNOWN
 
-        # Rückgabetyp(en) parsen
         return_types = [UMLDataType.from_string(t.strip()) for t in return_type_str.split(",")]
-        return UMLOperation(name=name, params=params, return_types=return_types, visability=visability)
+        return UMLOperation(name=name, params=params, return_types=return_types, visibility=visability)
 
     @staticmethod
     def parse_plantuml_classes(uml_text: str) -> List[UMLClass]:
         # TODO: falls später notwendig hier oder in UMLClass die datentypen/visability/parameter/rückgabetypen extrahieren
 
-        class_pattern = re.compile(r'class\s+(\w+)(?:\s+as\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
+        class_pattern = re.compile(r'class\s+(\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
         classes = []
 
         for match in class_pattern.finditer(uml_text):
@@ -89,10 +112,10 @@ class UMLParser:
     
     @staticmethod
     def parse_plantuml_enums(uml_text: str) -> List[UMLEnum]:
-        class_pattern = re.compile(r'enum\s+(\w+)(?:\s+as\s+"[^"]*")?\s*\{\s*([^}]*)\}', re.MULTILINE | re.DOTALL)
+        enum_pattern = re.compile(r'enum\s+(\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
         enums = []
 
-        for match in class_pattern.finditer(uml_text):
+        for match in enum_pattern.finditer(uml_text):
             name = match.group(1)
             body = match.group(2) or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
@@ -102,7 +125,7 @@ class UMLParser:
         return enums
     
     @staticmethod
-    def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 1.1.1) A m1 -> m2 B
         bin_pattern_1 = re.compile(
             r'(\w+)\s+"([^"]*)"\s+(--|--\*|--o)\s+"([^"]*)"\s+(\w+)',
@@ -114,7 +137,7 @@ class UMLParser:
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
-                rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
+                rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 m1 = raw_m1.strip()
                 m2 = raw_m2.strip()
                 relation = UMLRelation(
@@ -124,7 +147,11 @@ class UMLParser:
                     s_multiplicity = m1, 
                     d_multiplicity = m2
                 )
-                relations.append(relation)
+                if relation not in relations:
+                    relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
         # 1.1.2) A -> B
         bin_pattern_2 = re.compile(
@@ -138,7 +165,7 @@ class UMLParser:
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
-                rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
+                rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 relation = UMLRelation(
                     type=rel_type,
                     source=element_lookup[a],
@@ -146,12 +173,15 @@ class UMLParser:
                 )
                 if relation not in relations:
                     relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod
-    def parse_relation_right_to_left(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_relation_right_to_left(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 1.2.1) A m1 <- m2 B
         bin_pattern_3 = re.compile(
-            r'(\w+)\s+"([^"]*)"\s+(--|\*--|o--)\s+"([^"]*)"\s+(\w+)',
+            r'(\w+)\s+"([^"]*)"\s+(\*--|o--)\s+"([^"]*)"\s+(\w+)',
             re.MULTILINE
         )
         for match in bin_pattern_3.finditer(uml_text):
@@ -160,7 +190,7 @@ class UMLParser:
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
-                rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
+                rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 m1 = raw_m1.strip()
                 m2 = raw_m2.strip()
                 relation = UMLRelation(
@@ -172,10 +202,13 @@ class UMLParser:
                 )                
                 if relation not in relations:
                     relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
         
         # 1.2.2) A <- B
         bin_pattern_4 = re.compile(
-            r'(\w+)\s+(--|\*--|o--)\s+(\w+)',
+            r'(\w+)\s+(\*--|o--)\s+(\w+)',
             re.MULTILINE
         )
 
@@ -185,7 +218,7 @@ class UMLParser:
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
-                rel_type = type_map.get(raw_type.strip(), RelationType.UNKNOWN)
+                rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 relation = UMLRelation(
                     type=rel_type,
                     source=element_lookup[b],
@@ -193,9 +226,12 @@ class UMLParser:
                 )
                 if relation not in relations:
                     relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod 
-    def parse_asso_class_left_to_right(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_asso_class_left_to_right(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         
         assoc_pattern_1 = re.compile(r'(\w+)\s*\.\.\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
         for match in assoc_pattern_1.finditer(uml_text):
@@ -206,15 +242,18 @@ class UMLParser:
             if all(x in element_lookup for x in (a, b, c)):
                 rel = None
                 for r in relations:
-                    if r.equals(UMLRelation(RelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
+                    if r.equals(UMLRelation(UMLRelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
                         rel = r
                         break
-                relation = UMLRelation(type = RelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
+                relation = UMLRelation(type = UMLRelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
                 if relation not in relations:
                     relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}', '{b}' and '{c}' could not be created, as one of the elements was not found.")
 
     @staticmethod
-    def parse_asso_class_right_to_left(uml_text: str, type_map: Dict[str, RelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_asso_class_right_to_left(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 2.2) (A, B) .. C
         assoc_pattern_2 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.\.\s*(\w+)')
         for match in assoc_pattern_2.finditer(uml_text):
@@ -225,12 +264,15 @@ class UMLParser:
             if all(x in element_lookup for x in (a, b, c)):
                 rel = None
                 for r in relations:
-                    if r.equals(UMLRelation(RelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
+                    if r.equals(UMLRelation(UMLRelationType.ASSOCIATION, element_lookup[a], element_lookup[b])):
                         rel = r
                         break
-                relation = UMLRelation(type = RelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
+                relation = UMLRelation(type = UMLRelationType.ASSOCIATION_LINK, source = element_lookup[c], destination = rel)
                 if relation not in relations:
                     relations.append(relation)
+            else:
+                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                logger.warning(f"relation between '{a}', '{b}' and '{c}' could not be created, as one of the elements was not found.")
 
     @staticmethod
     def parse_plantuml_relations(uml_text: str, classes: List[UMLClass], enums: List[UMLEnum]) -> List[UMLRelation]:
@@ -239,11 +281,11 @@ class UMLParser:
         enum_lookup: Dict[str, UMLEnum] = {enu.name: enu for enu in enums}
         element_lookup = class_lookup | enum_lookup
         type_map = {
-                '--': RelationType.ASSOCIATION,
-                'o--': RelationType.AGGREGATION,
-                '--o': RelationType.AGGREGATION,
-                '*--': RelationType.COMPOSITION,
-                '--*': RelationType.COMPOSITION
+                '--': UMLRelationType.ASSOCIATION,
+                'o--': UMLRelationType.AGGREGATION,
+                '--o': UMLRelationType.AGGREGATION,
+                '*--': UMLRelationType.COMPOSITION,
+                '--*': UMLRelationType.COMPOSITION
             }
         
         # 1) binary relation with type matching (assoziation, aggregation, komposition)
@@ -259,7 +301,7 @@ class UMLParser:
         
         # 2.) association class
         # 2.1) C .. (A, B)
-        UMLParser.parse_asso_class_left_to_right(uml_text, type_map, element_lookup, relations)
+        UMLParser.parse_asso_class_left_to_right(uml_text, element_lookup, relations)
         # 2.2) (A, B) .. C
-        UMLParser.parse_asso_class_right_to_left(uml_text, type_map, element_lookup, relations)
+        UMLParser.parse_asso_class_right_to_left(uml_text, element_lookup, relations)
         return relations

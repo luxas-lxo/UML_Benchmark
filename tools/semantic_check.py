@@ -7,10 +7,22 @@ from nltk.corpus import wordnet_ic
 import re
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uml.semantic_check")
+logger.setLevel(logging.INFO)
+
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-nlp = spacy.load('en_core_web_lg')
-brown_ic = wordnet_ic.ic('ic-brown.dat')
+try:
+    logger.info("loading spacy \'en_core_web_lg\'")
+    nlp = spacy.load('en_core_web_lg')
+except OSError:
+    logger.error("spaCy model 'en_core_web_lg' is not installed. Run: python -m spacy download en_core_web_lg")
+    raise
+try:
+    logger.info("loading wordnet \'ic-brown.dat\'")
+    brown_ic = wordnet_ic.ic('ic-brown.dat')
+except LookupError:
+    logger.error("NLTK WordNet IC file 'ic-brown.dat' is missing. Run: nltk.download('wordnet_ic')")
+    raise
 
 class SemanticCheck:
     @staticmethod

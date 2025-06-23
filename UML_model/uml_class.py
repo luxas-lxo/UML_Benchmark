@@ -17,7 +17,7 @@ class UMLDataType(Enum):
     UNKNOWN = ""
 
     @staticmethod
-    def from_string(type_str: str) -> 'UMLDataType':
+    def from_string(type_str: str) -> Optional['UMLDataType']:
         normalized = type_str.strip().lower()
         
         type_aliases = {
@@ -49,64 +49,90 @@ class UMLVisability(Enum):
 
 class UMLAttribute(GradeReference):
     #TODO: add other specifications if needed (e.g. multiplicity constraints or modifier)
-    def __init__(self, name: str, datatype: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visability: UMLVisability = UMLVisability.UNKNOWN, derived: bool = False):
+    def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisability = UMLVisability.UNKNOWN, derived: bool = False):
         self.name: str = name
-        self.datatype: UMLDataType = datatype
+        self.data_type: UMLDataType = data_type
         self.initial: str = initial
-        self.visability: UMLVisability = visability
+        self.visibility: UMLVisability = visibility
         self.derived: bool = derived
         self.reference: Optional[UMLClass] = None
     
     def __repr__(self): 
-        return f"UMLAttribute({('/' if self.derived else '') + self.name}): visability {self.visability.name},  datatype  {self.datatype.name}, initial {'= ' + self.initial if self.initial else 'None'}"
+        return f"UMLAttribute({('/' if self.derived else '') + self.name}): visability {self.visibility.name}, datatype {self.data_type.name}, initial {'= ' + self.initial if self.initial else 'None'}"
 
     def __str__(self):
         return f"UMLAttribute({self.name})"
     
     def to_plantuml(self) -> str:
-        return f"{self.visability.value}{('/' if self.derived else '') + self.name}{': ' + self.datatype.value + (' = ' + self.initial if self.initial != '' else '') if self.datatype != UMLDataType.UNKNOWN else ''}"
+        name_part = ('/' if self.derived else '') + self.name
+        if self.data_type != UMLDataType.UNKNOWN:
+            type_part = ': ' + self.data_type.value
+            if self.initial != '':
+                type_part += ' = ' + self.initial
+        else:
+            type_part = ''
+        return f"{self.visibility.value}{name_part}{type_part}"
 
     def __hash__(self):
-        return hash(self.name) 
+        return hash((self.name, self.data_type, self.initial, self.visibility, self.derived))
+    
+    def __eq__(self, other):
+        if not isinstance(other, UMLAttribute):
+            return NotImplemented
+        return (
+            self.name == other.name and
+            self.data_type == other.data_type and
+            self.initial == other.initial and
+            self.visibility == other.visibility and
+            self.derived == other.derived
+        )
     
 class UMLOperation(GradeReference):
     #TODO: add other specifications if needed (e.g. modifier)
-    def __init__(self, name: str, params: Dict[str, UMLDataType] = {}, return_types: List[UMLDataType] = [UMLDataType.VOID], visability: UMLVisability = UMLVisability.UNKNOWN):
+    def __init__(self, name: str, params: Optional[Dict[str, UMLDataType]] = None, return_types: Optional[List[UMLDataType]] = None, visibility: UMLVisability = UMLVisability.UNKNOWN):
         self.name: str = name
-        self.params: Dict[str, UMLDataType] = params
-        self.return_types: List[UMLDataType] = return_types
-        self.visability: UMLVisability = visability
-        self.reference: Optional[UMLClass] = None
+        self.params: Dict[str, UMLDataType] = params if params is not None else {}
+        self.return_types: List[UMLDataType] = return_types if return_types is not None else [UMLDataType.VOID]
+        self.visibility: UMLVisability = visibility 
+        self.reference: Optional[UMLClass] = None  
 
     def __repr__(self): 
-        return f"UMLOperation({self.name}({', '.join(f'{k}: {v.name}' for k, v in self.params.items())})): visabilty {self.visability.name}, return type [{', '.join(t.name for t in self.return_types)}]"
+        return f"UMLOperation({self.name}({', '.join(f'{k}: {v.name}' for k, v in self.params.items())})): visability {self.visibility.name}, return type [{', '.join(t.name for t in self.return_types)}]"
 
     def __str__(self):
         return f"UMLOperation({self.name})"
     
     def to_plantuml(self) -> str: 
-        return f"{self.visability.value}{self.name}({', '.join(f'{k}' if v == UMLDataType.UNKNOWN else f'{k}: {v.value}' for k, v in self.params.items())}): {', '.join(t.value for t in self.return_types)}"
+        return f"{self.visibility.value}{self.name}({', '.join(f'{k}' if v == UMLDataType.UNKNOWN else f'{k}: {v.value}' for k, v in self.params.items())}): {', '.join(t.value for t in self.return_types)}"
     
     def __hash__(self):
-        return hash(self.name) 
+        return hash((self.name, tuple(self.params.items()), tuple(self.return_types), self.visibility))
+
+    
+    def __eq__(self, other):
+        if not isinstance(other, UMLOperation):
+            return NotImplemented
+        return (
+            self.name == other.name and
+            self.params == other.params and
+            self.return_types == other.return_types and
+            self.visibility == other.visibility
+        )
      
 class UMLClass(UMLElement, GradeReference):
-    def __init__(self, name: str, attributes: List[UMLAttribute] = [], operations: List[UMLOperation] = []):
+    def __init__(self, name: str, attributes: Optional[List[UMLAttribute]] = None, operations: Optional[List[UMLOperation]] = None):
         super().__init__(name)
-        self.attributes: List[UMLAttribute] = attributes
-        self.operations: List[UMLOperation] = operations
+        self.attributes: List[UMLAttribute] = attributes if attributes is not None else []
+        self.operations: List[UMLOperation] = operations if operations is not None else []
         self.relations: List[UMLRelation] = []
-        #TODO fehlt noch vollständig in Implementation
         self.super_class: Optional[UMLClass] = None 
-        for att in self.attributes:
-            att.reference = self
-        for opr in self.operations:
-            opr.reference = self
+        UMLClass.assign_content_reference(self)
+
 
     def __repr__(self): 
-        return f"UMLClass({self.name}): \nattributes = [{', '.join(str(a) for a in self.attributes)}], \noperations = [{', '.join(str(o) for o in self.operations)}], \nrelations = [{', '.join(str(r) for r in self.relations)}]"
+        return f"UMLClass({self.name}): \nattributes [{', '.join(str(a) for a in self.attributes)}], \noperations [{', '.join(str(o) for o in self.operations)}], \nrelations [{', '.join(str(r) for r in self.relations)}]"
     
-    def to_plantuml(self):
+    def to_plantuml(self) -> str:
         lines = [a.to_plantuml() for a in self.attributes] + [o.to_plantuml() for o in self.operations]
         if not lines:
             return f"class {self.name}"
@@ -125,19 +151,23 @@ class UMLClass(UMLElement, GradeReference):
         )   
     
     def __hash__(self):
-        return hash(self.name)
-        
+        return hash((self.name, tuple(self.attributes), tuple(self.operations), tuple(self.relations), self.super_class))
+
+
+    def assign_content_reference(self):
+        for att in self.attributes:
+            att.reference = self
+        for opr in self.operations:
+            opr.reference = self
+         
     def add_relation(self, relation: UMLRelation):
         if relation not in self.relations:
             self.relations.append(relation)
-        return True
     
-    def get_relation_ends(self):
+    def get_relation_ends(self) -> List['UMLClass']:
         ends: List[UMLClass] = []
         for rel in self.relations:
             ends.append(rel.destination)
-            if not rel.directed:
-                ends.append(rel.source)
         return ends
     
     def find_attribute(self, attribute_name: str) -> Optional[UMLAttribute]:
@@ -160,7 +190,7 @@ class UMLClass(UMLElement, GradeReference):
         if self.attributes:
             for att in self.attributes:
                 prefix = f"{att}: "
-                details = f"{prefix}{att.visability} {"/" + att.name if att.derived else att.name}: {att.datatype} = {att.initial}"
+                details = f"{prefix}{att.visibility} {"/" + att.name if att.derived else att.name}: {att.data_type} = {att.initial}"
                 indent = '\t\t' + ' ' * len(prefix)
                 wrapped = textwrap.fill(
                     details,
@@ -176,7 +206,7 @@ class UMLClass(UMLElement, GradeReference):
         if self.operations:
             for opr in self.operations:
                 prefix = f"{opr}: "
-                details = f"{prefix}{opr.visability} {opr.name}({opr.params}): {opr.return_types}"
+                details = f"{prefix}{opr.visibility} {opr.name}({opr.params}): {opr.return_types}"
                 indent = '\t\t' + ' ' * len(prefix)
                 wrapped = textwrap.fill(
                     details,

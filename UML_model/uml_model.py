@@ -1,6 +1,6 @@
 from UML_model.uml_class import UMLClass
 from UML_model.uml_enum import UMLEnum
-from UML_model.uml_relation import UMLRelation, RelationType
+from UML_model.uml_relation import UMLRelation, UMLRelationType
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
 
@@ -54,9 +54,9 @@ class UMLModel:
     def assign_relations(self):
         for relation in self.relation_list:
             if isinstance(relation.source, UMLElement) and isinstance(relation.destination, UMLElement):
-                self.element_lookup[relation.source.name.lower().strip()].add_relation(relation)
+                UMLModel.find_element(self, relation.source.name).add_relation(relation)
                 if not relation.directed:
-                    self.element_lookup[relation.destination.name.lower().strip()].add_relation(relation)
+                    UMLModel.find_element(self, relation.destination.name).add_relation(relation.swap_source_destination())
 
     def find_element(self, element_name: str) -> Optional[UMLElement]:
         return self.element_lookup.get(element_name.lower().strip())
@@ -69,8 +69,6 @@ class UMLModel:
     
     def find_relation(self, relation_name: str) -> Optional[UMLRelation]:
         return self.relation_lookup.get(relation_name.lower().strip())
-    
-    
     
     def print_details(self):
         term_width = shutil.get_terminal_size((80, 20)).columns  - 10
