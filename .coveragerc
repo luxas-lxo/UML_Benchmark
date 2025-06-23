@@ -1,11 +1,19 @@
 [run]
-source = LLM_response_generation, UML_model, tools, models, grading, plantuml_eval
-branch = True
+source =
+    LLM_response_generation
+    UML_model
+    tools
+    models
+    grading
+    plantuml_eval
 
 [report]
 omit =
-    */__init__.py
     */tests/*
+    */__init__.py
+    z_main_test.py
+    test_*.py
+
 exclude_lines =
     if __name__ == .__main__.:
     pragma: no cover
