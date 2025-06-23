@@ -90,9 +90,9 @@ class UMLRelation(UMLElement, GradeReference):
       
     def __hash__(self):
         if self.directed:
-            return hash((self.type, self.source, self.destination))
+            return hash((self.type, self.source.name, self.destination.name))
         else:
-            return hash((self.type, frozenset([self.source, self.destination])))
+            return hash((self.type, frozenset([self.source.name, self.destination.name])))
 
     def swap_source_destination(self) -> 'UMLRelation':
         if self.directed:

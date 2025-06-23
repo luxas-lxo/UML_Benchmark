@@ -15,7 +15,8 @@ model_configs = [
     # Füge weitere Modelle nach Bedarf hinzu
 ]
 
-with open("LLM_response_generation\uml_prompts.jsonl", encoding="utf-8") as f:
+input_path = Path("LLM_response_generation") / "uml_prompts.jsonl"
+with open(input_path, encoding="utf-8") as f:
     lines = f.readlines()
 
 prompts =["DESCRIPTION: "+json.loads(line)["description"]+";; QUESTION: "+json.loads(line)["question"]+";; EXAMPLE: "+json.loads(line)["example"] for line in lines]

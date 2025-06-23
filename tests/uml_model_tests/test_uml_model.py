@@ -65,7 +65,6 @@ class TestUMLModel(unittest.TestCase):
 
     def test_uml_model_initialization_with_class_enum_and_relation(self):
         uml_model = UMLModel(class_list=[self.uml_class], enum_list=[self.uml_enum], relation_list=[self.uml_relation_1])
-        print(uml_model.to_plantuml())
         # Check class initialization
         self.assertEqual(len(uml_model.class_list), 1)
         self.assertEqual(uml_model.class_list[0].name, "TestClass")

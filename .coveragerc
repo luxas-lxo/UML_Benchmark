@@ -1,0 +1,12 @@
+[run]
+source = LLM_response_generation, UML_model, tools, models, grading, plantuml_eval
+branch = True
+
+[report]
+omit =
+    */__init__.py
+    */tests/*
+exclude_lines =
+    if __name__ == .__main__.:
+    pragma: no cover
+    raise NotImplementedError
