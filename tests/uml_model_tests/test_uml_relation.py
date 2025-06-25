@@ -95,7 +95,7 @@ class TestUMLRelation(unittest.TestCase):
         relation2 = UMLRelation(type=UMLRelationType.ASSOCIATION, source=self.destination, destination=self.source, s_multiplicity="1*", d_multiplicity="1")
         self.assertNotEqual(relation1, relation2)
 
-    # equals same functionality as __eq__ but without multiplicities
+    # NOTE: equals same functionality as __eq__ but without multiplicities
     def test_uml_relation_equals_same_direction_equals(self):
         relation1 = UMLRelation(type=UMLRelationType.AGGREGATION, source=self.source, destination=self.destination)
         relation2 = UMLRelation(type=UMLRelationType.AGGREGATION, source=self.source, destination=self.destination)
@@ -129,7 +129,7 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(swapped.type, UMLRelationType.ASSOCIATION)
         self.assertEqual(swapped.s_multiplicity, relation.d_multiplicity)
         self.assertEqual(swapped.d_multiplicity, relation.s_multiplicity)
-        # important: name stays the same
+        # NOTE: important: name stays the same
         self.assertEqual(relation.name, self.relation.name)
 
     def test_uml_relation_swap_source_destination_directed(self):

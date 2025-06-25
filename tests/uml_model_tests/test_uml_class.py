@@ -441,4 +441,4 @@ class TestUMLClass(unittest.TestCase):
         found_op = self.full_class.find_operation("nonExistentOp")
         self.assertIsNone(found_op)
 
-    # print_details is not tested here as it is a console output function
+    # NOTE: print_details is not tested here as it is a console output function

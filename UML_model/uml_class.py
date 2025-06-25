@@ -8,7 +8,7 @@ import textwrap
 import shutil
 
 class UMLDataType(Enum):
-    # TODO: wenn später gebraucht, ausbauen
+    # NOTE: can be extended with more data types if needed
     STR = "str"
     INT = "int"
     FLOAT = "float"
@@ -48,7 +48,7 @@ class UMLVisability(Enum):
     UNKNOWN = ""
 
 class UMLAttribute(GradeReference):
-    #TODO: add other specifications if needed (e.g. multiplicity constraints or modifier)
+    # NOTE: add other specifications if needed (e.g. multiplicity constraints or modifier)
     def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisability = UMLVisability.UNKNOWN, derived: bool = False):
         self.name: str = name
         self.data_type: UMLDataType = data_type
@@ -87,8 +87,17 @@ class UMLAttribute(GradeReference):
             self.derived == other.derived
         )
     
+    def compare_content_to_student(self, student_attribute: 'UMLAttribute') -> bool:
+        if self.data_type == student_attribute.data_type and self.visibility == student_attribute.visibility and self.derived == student_attribute.derived:
+            # NOTE: allows a match if the initial values differ, but the initial value is not set in the reference
+            # just for my purpose, can be adapted
+            if self.initial == "" or self.initial == student_attribute.initial:
+                return True
+        return False
+        
+    
 class UMLOperation(GradeReference):
-    #TODO: add other specifications if needed (e.g. modifier)
+    # NOTE: add other specifications if needed (e.g. modifier)
     def __init__(self, name: str, params: Optional[Dict[str, UMLDataType]] = None, return_types: Optional[List[UMLDataType]] = None, visibility: UMLVisability = UMLVisability.UNKNOWN):
         self.name: str = name
         self.params: Dict[str, UMLDataType] = params if params is not None else {}
@@ -108,7 +117,6 @@ class UMLOperation(GradeReference):
     def __hash__(self):
         return hash((self.name, tuple(self.params.items()), tuple(self.return_types), self.visibility))
 
-    
     def __eq__(self, other):
         if not isinstance(other, UMLOperation):
             return NotImplemented
@@ -118,6 +126,14 @@ class UMLOperation(GradeReference):
             self.return_types == other.return_types and
             self.visibility == other.visibility
         )
+    
+    def compare_content_to_student(self, student_operation: 'UMLOperation') -> bool:
+        if self.visibility == student_operation.visibility and self.return_types == student_operation.return_types:
+            # NOTE: allows a match if the params differ, but the params are not set in the reference
+            # just for my purpose, can be adapted 
+            if self.params == {} or self.params == student_operation.params:
+                return True
+        return False
      
 class UMLClass(UMLElement, GradeReference):
     def __init__(self, name: str, attributes: Optional[List[UMLAttribute]] = None, operations: Optional[List[UMLOperation]] = None):

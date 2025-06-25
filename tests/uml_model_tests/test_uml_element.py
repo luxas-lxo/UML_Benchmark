@@ -20,5 +20,5 @@ class TestUMLElement(unittest.TestCase):
             def __init__(self, name: str):
                 super().__init__(name)
 
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(TypeError):
             IncompleteClass("TestElement")

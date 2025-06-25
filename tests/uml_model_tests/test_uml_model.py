@@ -170,4 +170,4 @@ class TestUMLModel(unittest.TestCase):
         self.assertEqual(found_relation, self.uml_relation_1)
         self.assertIsNone(uml_model.find_relation("NonExistent"))
 
-    # print_details is just for terminal output, not tested here
+    # NOTE: print_details is just for terminal output, not tested here

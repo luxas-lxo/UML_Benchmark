@@ -4,12 +4,14 @@ from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
 from UML_model.uml_enum import UMLEnum, UMLValue
 from UML_model.uml_relation import UMLRelation
 from grading.grade_reference import GradeReference
+from tools.syntactic_check import SyntacticCheck
+from tools.semantic_check import SemanticCheck
 
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from enum import Enum
 
 class FeatureType(Enum):
-    # TODO mehr hinzufügen wenn benötigt
+    # NOTE: add more types as needed
     CLASS = "class"
     ATTRIBUTE = "attribute"
     OPERATION = "operation"
@@ -23,25 +25,28 @@ class FeatureType(Enum):
     UNKNOWN = "unknown"
 
 class StructuralFeature:
-    def __init__(self, description: str, reference: GradeReference ,points: float):
+    def __init__(self, description: str, reference: GradeReference, points: float):
         self.description = description
-        self.type: FeatureType
-        self.reference = reference
         self.points = points
-        if isinstance(reference, UMLClass):
-            self.type = FeatureType.CLASS
-        elif isinstance(reference, UMLAttribute):
-            self.type = FeatureType.ATTRIBUTE
-        elif isinstance(reference, UMLOperation):
-            self.type = FeatureType.OPERATION
-        elif isinstance(reference, UMLEnum):
-            self.type = FeatureType.ENUM
-        elif isinstance(reference, UMLValue):
-            self.type = FeatureType.VALUE
-        elif isinstance(reference, UMLRelation):
-            self.type = FeatureType.RELATION
+        
+        reference_type_map = {
+            UMLClass: FeatureType.CLASS,
+            UMLAttribute: FeatureType.ATTRIBUTE,
+            UMLOperation: FeatureType.OPERATION,
+            UMLEnum: FeatureType.ENUM,
+            UMLValue: FeatureType.VALUE,
+            UMLRelation: FeatureType.RELATION,
+        }
+
+        for ref_type, feature_type in reference_type_map.items():
+            if isinstance(reference, ref_type):
+                self.type = feature_type
+                self.reference = reference
+                break
         else:
             self.type = FeatureType.UNKNOWN
+            self.reference = reference
+
 
     def __repr__(self):
         return f"StructuralFeature(desc: {self.description}, {self.points} point/s)"
@@ -66,7 +71,6 @@ class GradeModel:
         self.classes: List[GradeObject] = []
         self.enums: List[GradeObject] = []
         self.relations: List[GradeObject] = []
-        self.elements: Dict[str, List[GradeObject]] = {}
 
         for cls in uml_model.class_list:
             self.classes.append(GradeObject(cls))
@@ -75,19 +79,16 @@ class GradeModel:
         for rel in uml_model.relation_list:
             self.relations.append(GradeObject(rel))
         
-        self.class_lookup: Dict[str, GradeObject] = {cls.element.name: cls for cls in self.classes}
-        self.enum_lookup: Dict[str, GradeObject] = {enm.element.name: enm for enm in self.enums}
-        self.relation_lookup: Dict[str, GradeObject] = {rel.element.name: rel for rel in self.relations}
+        self.class_lookup: Dict[str, GradeObject] = {cls.element.name.lower().strip(): cls for cls in self.classes}
+        self.enum_lookup: Dict[str, GradeObject] = {enm.element.name.lower().strip(): enm for enm in self.enums}
+        self.relation_lookup: Dict[str, GradeObject] = {rel.element.name.lower().strip(): rel for rel in self.relations}
 
-        self.elements["classes"] = self.classes
-        self.elements["enums"] = self.enums
-        self.elements["relations"] = self.relations
 
     def __repr__(self):
         return f"GradeModel(\nclasses: {self.classes},\nenums: {self.enums},\nrelations: {self.relations}\n)"
         
     def add_class_grade_structure(self, class_name: str, exists_points: float = 0.0, attribute_points: float = 0.0, operation_points: float = 0.0):
-        grade_class = self.class_lookup.get(class_name)
+        grade_class = self.class_lookup.get(class_name.lower().strip())
         if not grade_class:
             raise ValueError(f"Class '{class_name}' not found in model.")
         grade_class.st_features.append(StructuralFeature("exists", grade_class.element, exists_points))
@@ -99,25 +100,48 @@ class GradeModel:
             grade_class.st_features.append(StructuralFeature(f"operation \"{opr.name}\"", opr, operation_points))
             grade_class.points += operation_points
 
-    def grade_class(self, stud_class: UMLClass, mapped_inst_class: UMLClass):
-        grade: float = 0.0
-        grade_class = self.class_lookup.get(mapped_inst_class.name)
+    def temp_grade_st_attribute(self, st_feature: StructuralFeature, stud_class: UMLClass):
+        temp_grade: float = 0.0
+        for att in stud_class.attributes:
+            if st_feature.reference.name == att.name or SyntacticCheck.syntactic_match(att.name, st_feature.reference.name)[0] or SemanticCheck.semantic_match(att.name, st_feature.reference.name)[0]:
+                # Attribute found -> 1/2 points
+                temp_grade += st_feature.points / 2
+                if st_feature.reference.compare_content_to_student(att):
+                    # structural match -> 1/2 points
+                    temp_grade += st_feature.points / 2
+                break
+        return temp_grade
+    
+    def temp_grade_st_operation(self, st_feature: StructuralFeature, stud_class: UMLClass):
+        temp_grade: float = 0.0
+        for opr in stud_class.operations:
+            if st_feature.reference.name == opr.name or SyntacticCheck.syntactic_match(opr.name, st_feature.reference.name)[0] or SemanticCheck.semantic_match(opr.name, st_feature.reference.name)[0]:
+                # Operation found -> 1/2 points
+                temp_grade += st_feature.points / 2
+                if st_feature.reference.compare_content_to_student(opr):
+                    # structural match -> 1/2 points
+                    temp_grade += st_feature.points / 2
+                break
+        return temp_grade
+
+    def temp_grade_class(self, stud_class: UMLClass, mapped_inst_class: UMLClass) -> Tuple[float, float]:
+        temp_grade: float = 0.0
+        grade_class: GradeObject = self.class_lookup.get(mapped_inst_class.name.lower().strip())
         if not grade_class:
             raise ValueError(f"Class '{mapped_inst_class.name}' not found in model.")
-        for st_feauture in grade_class.st_features:
-            if st_feauture.type == FeatureType.CLASS:
-                # klasse wurde gemappt -> sie existiert -> gibt punkte
-                grade += st_feauture.points
-            elif st_feauture.type == FeatureType.ATTRIBUTE:
-                #TODO: Attribute match
-                pass
-            elif st_feauture.type == FeatureType.OPERATION:
-                #TODO: Operation match
-                pass
+        for st_feature in grade_class.st_features:
+            if st_feature.type == FeatureType.CLASS:
+                # class exists -> points
+                temp_grade += st_feature.points / 2
+                if st_feature.reference.name == stud_class.name or SyntacticCheck.syntactic_match(stud_class.name, st_feature.reference.name)[0] or SemanticCheck.semantic_match(stud_class.name, st_feature.reference.name)[0]:
+                    # name match -> 1/2 points
+                    temp_grade += st_feature.points / 2
+            elif st_feature.type == FeatureType.ATTRIBUTE:
+                temp_grade += self.temp_grade_st_attribute(st_feature, stud_class)
+            elif st_feature.type == FeatureType.OPERATION:
+                temp_grade += self.temp_grade_st_operation(st_feature, stud_class)
             else:
                 return NotImplemented
-                
-
-        
+        return (temp_grade / grade_class.points if grade_class.points > 0 else 0.0, temp_grade)
 
     

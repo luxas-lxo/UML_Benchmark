@@ -4,6 +4,7 @@ from UML_model.uml_enum import UMLEnum, UMLValue
 import unittest
 
 class TestUMLParser(unittest.TestCase):
+    # attribute tests
     def test_parse_attributes_invalid(self):
         uml_line_1 = ""
         uml_line_2 = "   "
@@ -76,7 +77,8 @@ class TestUMLParser(unittest.TestCase):
         expected = UMLAttribute(name="name", data_type=UMLDataType.STR, initial="'value'", visibility=UMLVisability.PRIVATE, derived=True)
         result = UMLParser.parse_attribute(uml_line)
         self.assertEqual(result, expected)
-
+    
+    # operation tests
     def test_parse_operations_invalid(self):
         uml_line_1 = ""
         uml_line_2 = "   "
@@ -167,6 +169,7 @@ class TestUMLParser(unittest.TestCase):
         result = UMLParser.parse_operation(uml_line)
         self.assertEqual(result, expected)
 
+    # class tests
     def test_parse_classes_empty(self):
         uml_text = "@startuml\n@enduml"
         expected = []
@@ -298,6 +301,7 @@ class TestUMLParser(unittest.TestCase):
         result = UMLParser.parse_plantuml_classes(uml_text)
         self.assertEqual(result, expected)
 
+    # enum tests
     def test_parse_enums_empty(self):
         uml_text = "@startuml\n@enduml"
         expected = []
@@ -425,3 +429,5 @@ class TestUMLParser(unittest.TestCase):
 
         result = UMLParser.parse_plantuml_enums(uml_text)
         self.assertEqual(result, expected)
+
+    # TODO: relation tests

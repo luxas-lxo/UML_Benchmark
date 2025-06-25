@@ -7,8 +7,14 @@ from nltk.corpus import wordnet_ic
 import re
 import logging
 
-logger = logging.getLogger("uml.semantic_check")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("semantic_check")
+logger.setLevel(logging.DEBUG)
+
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(levelname)s] - %(name)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 try:
@@ -82,7 +88,7 @@ class SemanticCheck:
         return similarity
 
     @staticmethod
-    def semantic_match(word1: str, word2: str, threshold: float = 0.7) -> Tuple[bool, float]:
+    def semantic_match(word1: str, word2: str, threshold: float = 0.65) -> Tuple[bool, float]:
         word1 = SemanticCheck.normalize_identifier(word1)
         word2 = SemanticCheck.normalize_identifier(word2)
         wup = SemanticCheck.wup_score(word1, word2)
@@ -90,4 +96,6 @@ class SemanticCheck:
         w2v = SemanticCheck.word2vec_score(word1, word2)
         tra = SemanticCheck.transformer_score(word1, word2)
         score = (0.1 * wup + 0.2 * lin + 0.3 * w2v + 0.4 * tra)
+        if score >= threshold:
+            logger.debug(f"Semantic match: '{word1}' and '{word2}': score = {score:.2f}")
         return (score >= threshold, score)

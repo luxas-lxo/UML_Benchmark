@@ -95,7 +95,6 @@ class UMLParser:
 
     @staticmethod
     def parse_plantuml_classes(uml_text: str) -> List[UMLClass]:
-        # TODO: falls später notwendig hier oder in UMLClass die datentypen/visability/parameter/rückgabetypen extrahieren
 
         class_pattern = re.compile(r'class\s+(\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
         classes = []
@@ -150,7 +149,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
         # 1.1.2) A -> B
@@ -174,7 +173,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod
@@ -203,7 +202,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
         
         # 1.2.2) A <- B
@@ -227,7 +226,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod 
@@ -249,7 +248,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}', '{b}' and '{c}' could not be created, as one of the elements was not found.")
 
     @staticmethod
@@ -271,7 +270,7 @@ class UMLParser:
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # TODO: vllt später auch klassen anlegen, wenn nicht gefunden
+                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}', '{b}' and '{c}' could not be created, as one of the elements was not found.")
 
     @staticmethod

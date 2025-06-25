@@ -17,7 +17,7 @@ class UMLRelation(UMLElement, GradeReference):
         self.type: UMLRelationType = type
         self.source: UMLElement = source
         self.destination: UMLElement = destination
-        #TODO: multiplicity as enum class
+        # NOTE: multiplicity as enum class?
         self.s_multiplicity: str = s_multiplicity
         self.d_multiplicity: str = d_multiplicity
         self.directed: bool = self.type != UMLRelationType.ASSOCIATION
@@ -64,7 +64,7 @@ class UMLRelation(UMLElement, GradeReference):
 
         return False
   
-    #Im Unterschied zu eq ohne Multiplizitäten
+    # NOTE: this is not the same as __eq__, this is used to compare the relation without considering the multiplicities
     def equals(self, other) -> bool:
         if not isinstance(other, UMLRelation):
             return NotImplemented
