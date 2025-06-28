@@ -2,7 +2,7 @@ from UML_model.uml_element import UMLElement
 from UML_model.uml_relation import UMLRelation
 from grading.grade_reference import GradeReference
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import textwrap
 import shutil
@@ -87,15 +87,24 @@ class UMLAttribute(GradeReference):
             self.derived == other.derived
         )
     
-    def compare_content_to_student(self, student_attribute: 'UMLAttribute') -> bool:
-        if self.data_type == student_attribute.data_type and self.visibility == student_attribute.visibility and self.derived == student_attribute.derived:
-            # NOTE: allows a match if the initial values differ, but the initial value is not set in the reference
-            # just for my purpose, can be adapted
-            if self.initial == "" or self.initial == student_attribute.initial:
-                return True
-        return False
+    def compare_content_to_student(self, student_attribute: 'UMLAttribute') -> Dict[str, bool]:
+        matches = {
+            "data_type": False,
+            "initial": False,
+            "visibility": False,
+            "derived": False
+        }
         
-    
+        if self.data_type == student_attribute.data_type:
+            matches["data_type"] = True
+        if self.initial == student_attribute.initial:
+            matches["initial"] = True
+        if self.visibility == student_attribute.visibility:
+            matches["visibility"] = True
+        if self.derived == student_attribute.derived:
+            matches["derived"] = True
+        return matches
+
 class UMLOperation(GradeReference):
     # NOTE: add other specifications if needed (e.g. modifier)
     def __init__(self, name: str, params: Optional[Dict[str, UMLDataType]] = None, return_types: Optional[List[UMLDataType]] = None, visibility: UMLVisability = UMLVisability.UNKNOWN):
@@ -127,14 +136,20 @@ class UMLOperation(GradeReference):
             self.visibility == other.visibility
         )
     
-    def compare_content_to_student(self, student_operation: 'UMLOperation') -> bool:
-        if self.visibility == student_operation.visibility and self.return_types == student_operation.return_types:
-            # NOTE: allows a match if the params differ, but the params are not set in the reference
-            # just for my purpose, can be adapted 
-            if self.params == {} or self.params == student_operation.params:
-                return True
-        return False
-     
+    def compare_content_to_student(self, student_operation: 'UMLOperation') -> Dict[str, bool]:
+        matches = {
+            "params": False,
+            "return_types": False,
+            "visibility": False
+        }
+        if self.visibility == student_operation.visibility:
+            matches["visibility"] = True
+        if self.return_types == student_operation.return_types:
+            matches["return_types"] = True
+        if self.params == student_operation.params:
+            matches["params"] = True
+        return matches
+
 class UMLClass(UMLElement, GradeReference):
     def __init__(self, name: str, attributes: Optional[List[UMLAttribute]] = None, operations: Optional[List[UMLOperation]] = None):
         super().__init__(name)
