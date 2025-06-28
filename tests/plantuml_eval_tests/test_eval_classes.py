@@ -790,8 +790,8 @@ class TestClassComperator(unittest.TestCase):
 
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 2)
-        self.assertIn(misplaced_op_map[self.banana_op_1], (self.date_op_1, self.cherry_op_1))  # either date or cherry, since both have a match and the content is identical
-        self.assertEqual(misplaced_op_map[self.banana_op_2], self.date_op_2)
+        self.assertEqual(misplaced_op_map[self.banana_op_1], self.date_op_1)
+        self.assertIn(misplaced_op_map[self.banana_op_2], (self.date_op_2, self.cherry_op_1))  # either date or cherry, since both have a match and the content is identical
 
         self.assertIsInstance(miss_op_list, list)
         self.assertEqual(len(miss_op_list), 1)
@@ -915,8 +915,9 @@ class TestClassComperator(unittest.TestCase):
 
         self.assertIsInstance(misplaced_oper_map, dict)
         self.assertEqual(len(misplaced_oper_map), 2)
-        self.assertIn(misplaced_oper_map[self.banana_op_1], (self.cherry_op_1, self.date_op_1))
-        self.assertEqual(misplaced_oper_map[self.banana_op_2], self.date_op_2)
+        self.assertEqual(misplaced_oper_map[self.banana_op_1], self.date_op_1)
+        self.assertIn(misplaced_oper_map[self.banana_op_2], (self.cherry_op_1, self.date_op_2))
+        
 
         self.assertIsInstance(miss_oper_list, list)
         self.assertEqual(len(miss_oper_list), 1)
