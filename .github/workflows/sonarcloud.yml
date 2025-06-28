@@ -37,7 +37,9 @@ jobs:
       - name: Download NLP resources (spaCy + WordNet)
         run: |
           python -m spacy download en_core_web_lg
+          python -c "import nltk; nltk.download('wordnet')"
           python -c "import nltk; nltk.download('wordnet_ic')"
+
 
       - name: Run unittests with coverage
         run: |
