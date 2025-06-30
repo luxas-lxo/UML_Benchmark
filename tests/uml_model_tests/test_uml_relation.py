@@ -23,7 +23,7 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(relation.source, self.source)
         self.assertEqual(relation.destination, self.destination)
         self.assertEqual(relation.s_multiplicity, "1")
-        self.assertEqual(relation.d_multiplicity, "0..*")
+        self.assertEqual(relation.d_multiplicity, "*")
         self.assertFalse(relation.directed)
         self.assertIsInstance(relation, UMLElement)
 
@@ -33,7 +33,7 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(relation.source, self.source)
         self.assertEqual(relation.destination, self.destination)
         self.assertEqual(relation.s_multiplicity, "1")
-        self.assertEqual(relation.d_multiplicity, "0..*")
+        self.assertEqual(relation.d_multiplicity, "*")
         self.assertTrue(relation.directed)
         self.assertIsInstance(relation, UMLElement)      
 
@@ -42,13 +42,13 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(relation.type, UMLRelationType.ASSOCIATION)
         self.assertEqual(relation.source, self.source)
         self.assertEqual(relation.destination, self.destination)
-        self.assertEqual(relation.s_multiplicity, "")
-        self.assertEqual(relation.d_multiplicity, "")
+        self.assertEqual(relation.s_multiplicity, "1")
+        self.assertEqual(relation.d_multiplicity, "1")
         self.assertFalse(relation.directed)
         self.assertIsInstance(relation, UMLElement)
 
     def test_uml_relation_repr(self):
-        expected = "UMLRelation(UMLClass(Source), UMLClass(Destination)): source multiplicity 1 -ASSOCIATION- destination multiplicity 0..*"
+        expected = "UMLRelation(UMLClass(Source), UMLClass(Destination)): source multiplicity 1 -ASSOCIATION- destination multiplicity *"
         self.assertEqual(repr(self.relation), expected)
 
     def test_uml_relation_str(self):
@@ -56,17 +56,17 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(str(self.relation), expected)
 
     def test_uml_relation_to_plantuml_association(self):
-        expected = 'Source "1" -- "0..*" Destination'
+        expected = 'Source "1" -- "*" Destination'
         self.assertEqual(self.relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_aggregation(self):
         relation = UMLRelation(type=UMLRelationType.AGGREGATION, source=self.source, destination=self.destination, s_multiplicity="1", d_multiplicity="0..*")
-        expected = 'Source "1" --o "0..*" Destination'
+        expected = 'Source "1" --o "*" Destination'
         self.assertEqual(relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_composition(self):
         relation = UMLRelation(type=UMLRelationType.COMPOSITION, source=self.source, destination=self.destination, s_multiplicity="1", d_multiplicity="0..*")
-        expected = 'Source "1" --* "0..*" Destination'
+        expected = 'Source "1" --* "*" Destination'
         self.assertEqual(relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_association_link(self):

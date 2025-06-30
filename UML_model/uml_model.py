@@ -4,7 +4,7 @@ from UML_model.uml_relation import UMLRelation, UMLRelationType
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import textwrap
 import shutil
 
@@ -69,7 +69,37 @@ class UMLModel:
     
     def find_relation(self, relation_name: str) -> Optional[UMLRelation]:
         return self.relation_lookup.get(relation_name.lower().strip())
-    
+
+    def build_class_reachability_map(self) -> Dict[UMLClass, List[UMLClass]]:
+        adjacency_reach_map: Dict[UMLClass, List[UMLClass]] = {uml_class: [] for uml_class in self.class_list}
+        class_relations: List[UMLRelation] = [relation for relation in self.relation_list if isinstance(relation.source, UMLClass) and isinstance(relation.destination, UMLClass)]
+        for relation in class_relations:
+            adjacency_reach_map[relation.source].append(relation.destination)
+            if not relation.directed:
+                adjacency_reach_map[relation.destination].append(relation.source)
+        
+        def dfs(cls: UMLClass, visited: Set[UMLClass]):
+            for neighbor in adjacency_reach_map.get(cls, []):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    dfs(neighbor, visited)
+
+        reach_map: Dict[UMLClass, List[UMLClass]] = {}
+        for cls in self.class_list:
+            visited: Set[UMLClass] = set()
+            visited.add(cls)
+            dfs(cls, visited)
+            reachable = list(visited - {cls})
+            has_self_relation = any(
+                rel.source == cls and rel.destination == cls
+                for rel in self.relation_list
+            )
+            if has_self_relation:
+                reachable.append(cls)
+            reach_map[cls] = reachable
+
+        return reach_map
+
     def print_details(self):
         term_width = shutil.get_terminal_size((80, 20)).columns  - 10
         print("**UMLModel Details:**")

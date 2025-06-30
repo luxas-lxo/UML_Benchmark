@@ -1,0 +1,195 @@
+from UML_model.uml_model import UMLModel
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
+from UML_model.uml_enum import UMLEnum, UMLValue
+from UML_model.uml_relation import UMLRelation
+from plantuml_eval.eval_classes import ClassComperator
+from plantuml_eval.eval_relations import RelationComperator
+from plantuml_eval.eval_enums import EnumComperator
+from grading.grade_metamodel import GradeModel
+
+from typing import Optional, Dict, List, Tuple, Union
+import logging
+
+logger = logging.getLogger("eval_model")
+logger.setLevel(logging.DEBUG)
+
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(levelname)s] - %(name)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+class EvalModel:
+    def __init__(self, inst_model: UMLModel, stud_model: UMLModel, grade_model: Optional[GradeModel] = None):
+        self.instructor_model: UMLModel = inst_model
+        self.student_model: UMLModel = stud_model
+        self.grade_model: Optional[GradeModel] = grade_model
+
+        # Algorithm 1: Compare classes in InstructorModel and StudentModel
+        compare_classes = ClassComperator.compare_classes(self.instructor_model, self.student_model, self.grade_model)
+        self.class_match_map: Dict[UMLClass, UMLClass] = compare_classes[0]
+        self.class_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.class_match_map.items()}
+        self.missing_classes: List[UMLClass] = compare_classes[1]
+        self.missing_classes_str: List[str] = [str(cls) for cls in self.missing_classes]
+
+        # Algorithm 2: Compare class content in InstructorModel and StudentModel
+        compare_class_content = ClassComperator.compare_class_content(self.instructor_model, self.student_model, self.class_match_map, self.grade_model)
+        self.attr_match_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[0]
+        self.attr_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.attr_match_map.items()}
+        self.misplaced_attr_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[1]
+        self.misplaced_attr_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_attr_map.items()}
+        self.missed_attr_list: List[Tuple[UMLClass, UMLAttribute]] = compare_class_content[2]
+        self.missed_attr_list_str: List[str] = [f"{str(cls)}: {str(attr)}" for cls, attr in self.missed_attr_list]
+        self.oper_matched_map: Dict[UMLOperation, UMLOperation] = compare_class_content[3]
+        self.oper_matched_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.oper_matched_map.items()}
+        self.misplaced_oper_map: Dict[UMLOperation, UMLOperation] = compare_class_content[4]
+        self.misplaced_oper_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_oper_map.items()}
+        self.missed_oper_list: List[Tuple[UMLClass, UMLOperation]] = compare_class_content[5]
+        self.missed_oper_list_str: List[str] = [f"{str(cls)}: {str(op)}" for cls, op in self.missed_oper_list]
+
+        # Algorithm 3: Find split classes in InstructorModel and StudentModel
+        self.split_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map, self.misplaced_attr_map, self.oper_matched_map, self.misplaced_oper_map)
+        self.split_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.split_class_map.items()}
+
+        # Algorithm 4: Find merged classes in InstructorModel and StudentModel
+        self.merge_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_merge_match(self.instructor_model, self.class_match_map, self.misplaced_attr_map, self.misplaced_oper_map)
+        self.merge_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.merge_class_map.items()}
+        
+        # Algorithm 6: Compare ENUM in InstructorModel and StudentModel
+        compare_enums = EnumComperator.compare_enums(self.instructor_model, self.student_model, self.grade_model)
+        self.enum_match_map: Dict[UMLEnum, UMLEnum] = compare_enums[0]
+        self.enum_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.enum_match_map.items()}
+        self.missing_enums: List[UMLEnum] = compare_enums[1]
+        self.missing_enums_str: List[str] = [str(enum) for enum in self.missing_enums]
+        self.possible_misplaced_values: Dict[UMLValue, Union[UMLAttribute, UMLClass]] = compare_enums[2]
+        self.possible_misplaced_values_str: Dict[str, str] = {str(k): str(v) for k, v in self.possible_misplaced_values.items()}
+
+        # Algorithm 5: Compare association in InstructorModel and StudentModel
+        compare_relations = RelationComperator.compare_relations(self.instructor_model, self.student_model, self.class_match_map, self.missing_classes, self.enum_match_map, self.missing_enums)
+        self.relation_match_map: Dict[UMLRelation, UMLRelation] = compare_relations[0]
+        self.relation_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.relation_match_map.items()}
+        self.derivation_list: List[UMLRelation] = compare_relations[1]
+        self.derivation_list_str: List[str] = [str(rel) for rel in self.derivation_list]
+
+    def print_grade_model(self):
+        if self.grade_model:
+            print("\nGrade Model:")
+            for obj in self.grade_model.classes:
+                print(f"Object({obj.element}, {obj.points}, {obj.st_features})")
+            for obj in self.grade_model.enums:
+                print(f"Enum({obj.element}, {obj.points}, {obj.st_features})")
+        else:
+            print("\nNo grade model provided.")
+
+    def print_compare_classes(self):
+        print("\nClass Matches:")
+        for inst_class, stud_class in self.class_match_map.items():
+            print(f"{str(inst_class)} -> {str(stud_class)}")
+        print("\nMissing Classes:")
+        for missing in self.missing_classes:
+            print(f"Missing: {str(missing)}")
+
+    def print_compare_class_content(self):
+        print("\nAttribute Matches:")
+        for inst_attr, stud_attr in self.attr_match_map.items():
+            print(f"{str(inst_attr)} -> {str(stud_attr)}")
+        print("\nMisplaced Attributes:")
+        for inst_attr, stud_attr in self.misplaced_attr_map.items():
+            print(f"{str(inst_attr)} -> {str(stud_attr)}")
+        print("\nMissed Attributes:")
+        for cls, attr in self.missed_attr_list:
+            print(f"Missed: {str(attr)} in {str(cls)}")
+        print("\nOperation Matches:")
+        for inst_op, stud_op in self.oper_matched_map.items():
+            print(f"{str(inst_op)} -> {str(stud_op)}")
+        print("\nMisplaced Operations:")
+        for inst_op, stud_op in self.misplaced_oper_map.items():
+            print(f"{str(inst_op)} -> {str(stud_op)}")
+        print("\nMissed Operations:")
+        for cls, op in self.missed_oper_list:
+            print(f"Missed: {str(op)} in {str(cls)}")
+
+    def print_split_class_map(self):
+        print("\nSplit Class Map:")
+        for inst_class, stud_class in self.split_class_map.items():
+            print(f"{str(inst_class)} -> {str(stud_class)}")
+    
+    def print_merge_class_map(self):
+        print("\nMerge Class Map:")
+        for inst_class, stud_class in self.merge_class_map.items():
+            print(f"{str(inst_class)} -> {str(stud_class)}")
+
+    def print_compare_enums(self):
+        print("\nEnum Matches:")
+        for inst_enum, stud_enum in self.enum_match_map.items():
+            print(f"{str(inst_enum)} -> {str(stud_enum)}")
+        print("\nMissing Enums:")
+        for missing in self.missing_enums:
+            print(f"Missing: {str(missing)}")
+        print("\nPossible Misplaced Values:")
+        for value, attr_or_class in self.possible_misplaced_values.items():
+            print(f"{str(value)} -> {str(attr_or_class)}")
+
+    def print_compare_relations(self):
+        print("\nRelation Matches:")
+        for inst_relation, stud_relation in self.relation_match_map.items():
+            print(f"{str(inst_relation)} -> {str(stud_relation)}")
+        print("\nDerivations:")
+        for derivation in self.derivation_list:
+            print(f"Derivation: {str(derivation)}")
+
+    def __repr__(self):
+        output = ["Evaluation Model Summary:"]
+        output.append("\nInstructor Model:")
+        output.append(self.instructor_model.to_plantuml())
+        output.append("\nStudent Model:")
+        output.append(self.student_model.to_plantuml())
+        if self.grade_model:
+            output.append("\nGrade Model:")
+            output.append(repr(self.grade_model))
+
+        output.append("\nAlgorithm 1: Compare Classes")
+        output.append("\tClass Matches:")
+        output.append(f"\t{self.class_match_map_str}")
+        output.append("\tMissing Classes:")
+        output.append(f"\t{self.missing_classes_str}")
+
+        output.append("\nAlgorithm 2: Compare Class Content")
+        output.append("\tAttribute Matches:")
+        output.append(f"\t{self.attr_match_map_str}")
+        output.append("\tMisplaced Attributes:")
+        output.append(f"\t{self.misplaced_attr_map_str}")
+        output.append("\tMissed Attributes:")
+        output.append(f"\t{self.missed_attr_list_str}")
+        output.append("\tOperation Matches:")
+        output.append(f"\t{self.oper_matched_map_str}")
+        output.append("\tMisplaced Operations:")
+        output.append(f"\t{self.misplaced_oper_map_str}")
+        output.append("\tMissed Operations:")
+        output.append(f"\t{self.missed_oper_list_str}")
+
+        output.append("\nAlgorithm 3: Split Classes")
+        output.append("\tSplit Class Map:")
+        output.append(f"\t{self.split_class_map_str}")
+
+        output.append("\nAlgorithm 4: Merge Classes")
+        output.append("\tMerge Class Map:")
+        output.append(f"\t{self.merge_class_map_str}")
+
+        output.append("\nAlgorithm 6: Compare Enums")
+        output.append("\tEnum Matches:")
+        output.append(f"\t{self.enum_match_map_str}")
+        output.append("\tMissing Enums:")
+        output.append(f"\t{self.missing_enums_str}")
+        output.append("\tPossible Misplaced Values:")
+        output.append(f"\t{self.possible_misplaced_values_str}")
+
+        output.append("\nAlgorithm 5: Compare Relations")
+        output.append("\tRelation Matches:")
+        output.append(f"\t{self.relation_match_map_str}")
+        output.append("\tRelation Derivations:")
+        output.append(f"\t{self.derivation_list_str}")
+        return "\n".join(output)
+    
+    def __str__(self):
+        return "EvalModel"

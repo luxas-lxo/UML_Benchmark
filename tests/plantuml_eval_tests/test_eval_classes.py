@@ -1,4 +1,5 @@
 from plantuml_eval.eval_classes import ClassComperator
+from plantuml_eval.eval_helper_functions import EvalHelper
 from UML_model.uml_model import UMLModel
 from UML_model.uml_class import UMLClass, UMLAttribute, UMLDataType, UMLVisability
 from grading.grade_metamodel import GradeModel
@@ -79,8 +80,8 @@ class TestClassComperator(unittest.TestCase):
         self.elderberry = self.instructor_model.class_lookup["elderberry"]
 
         # initializing test grade model
-        self.grade_model = GradeModel(self.instructor_model)
-        
+        self.grade_model = GradeModel("GradeModel", self.instructor_model)
+
         self.grade_model.add_class_grade_structure(cls=self.apple, exists_points=1.0, attribute_points=1.0, operation_points=1.0)
         self.grade_model.add_class_grade_structure(cls=self.banana, exists_points=1.0, attribute_points=1.0, operation_points=1.0)
         self.grade_model.add_class_grade_structure(cls=self.cherry, exists_points=1.0, attribute_points=1.0)
@@ -195,20 +196,20 @@ class TestClassComperator(unittest.TestCase):
 
     # tests for compare classes
     def test_comperator_get_safe_matches_classes(self):
-        safe_matches = ClassComperator.get_safe_matches(self.possible_class_matches)
+        safe_matches = EvalHelper.get_safe_matches(self.possible_class_matches)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.date, list(safe_matches.keys())[0])
 
     def test_comperator_get_safe_matches_classes_empty(self):
-        safe_matches = ClassComperator.get_safe_matches({})
+        safe_matches = EvalHelper.get_safe_matches({})
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 0)
 
     def test_comperator_find_best_class_match_assignment_without_gm(self):
         # This test is for the case where no grade model is provided
         # it shows what problems can occur if no grade model is provided
-        best_match = ClassComperator.find_best_match_assignment(self.possible_class_matches)
+        best_match = EvalHelper.find_best_match_assignment(self.possible_class_matches)
 
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 4)
@@ -218,7 +219,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(best_match[self.date], self.date)
 
     def test_comperator_find_best_class_match_assignment_with_gm(self):
-        best_match = ClassComperator.find_best_match_assignment(self.possible_class_matches, self.grade_model)
+        best_match = EvalHelper.find_best_match_assignment(self.possible_class_matches, self.grade_model)
 
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 4)
@@ -229,18 +230,18 @@ class TestClassComperator(unittest.TestCase):
 
     def test_comperator_find_best_class_match_assignment_empty(self):
         # without grade model
-        best_match = ClassComperator.find_best_match_assignment({})
+        best_match = EvalHelper.find_best_match_assignment({})
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 0)
         # with grade model
-        best_match = ClassComperator.find_best_match_assignment({}, self.grade_model)
+        best_match = EvalHelper.find_best_match_assignment({}, self.grade_model)
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 0)
 
     def test_comperator_handle_possible_class_matches_without_gm(self):
         # combines safe and best matches
         # safe matches are excluded from best matches calculation
-        safe_matches, best_matches = ClassComperator.handle_possible_matches(self.possible_class_matches)
+        safe_matches, best_matches = EvalHelper.handle_possible_matches(self.possible_class_matches)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.date, list(safe_matches.keys())[0])
@@ -254,7 +255,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_handle_possible_class_matches_with_gm(self):
         # combines safe and best matches
         # safe matches are excluded from best matches calculation
-        safe_matches, best_matches = ClassComperator.handle_possible_matches(self.possible_class_matches, self.grade_model)
+        safe_matches, best_matches = EvalHelper.handle_possible_matches(self.possible_class_matches, self.grade_model)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.date, list(safe_matches.keys())[0])
@@ -269,7 +270,7 @@ class TestClassComperator(unittest.TestCase):
         # combines safe and best matches
         # safe matches are excluded from best matches calculation
         # without grade model
-        safe_matches, best_matches = ClassComperator.handle_possible_matches({})
+        safe_matches, best_matches = EvalHelper.handle_possible_matches({})
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 0)
 
@@ -277,7 +278,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(len(best_matches), 0)
 
         # with grade model
-        safe_matches, best_matches = ClassComperator.handle_possible_matches({}, self.grade_model)
+        safe_matches, best_matches = EvalHelper.handle_possible_matches({}, self.grade_model)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 0)
 
@@ -287,7 +288,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_compare_classes_empty(self):
         instructor_model = UMLModel("@startuml\n@enduml")
         student_model = UMLModel("@startuml\n@enduml")
-        grade_model = GradeModel(instructor_model)
+        grade_model = GradeModel("", instructor_model)
         result = ClassComperator.compare_classes(instructor_model, student_model, grade_model)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)
@@ -367,7 +368,7 @@ class TestClassComperator(unittest.TestCase):
     # tests for compare attributes
     # NOTE: most empty method calls are not tested, for methods that were already tested in the class comperator tests, since the emptyness does not change for attributes
     def test_comperator_get_safe_matches_attributes(self):
-        safe_matches = ClassComperator.get_safe_matches(self.possible_attr_matches)
+        safe_matches = EvalHelper.get_safe_matches(self.possible_attr_matches)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.apple_attr_2, list(safe_matches.keys())[0])
@@ -376,7 +377,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_find_best_attr_match_assignment_without_gm(self):
         # This test is for the case where no grade model is provided
         # it shows what problems can occur if no grade model is provided
-        best_match = ClassComperator.find_best_match_assignment(self.possible_attr_matches)
+        best_match = EvalHelper.find_best_match_assignment(self.possible_attr_matches)
 
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 4)
@@ -387,7 +388,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertIsNone(best_match.get(self.elderberry_attr_1))
 
     def test_comperator_find_best_attr_match_assignment_with_gm(self):
-        best_match = ClassComperator.find_best_match_assignment(self.possible_attr_matches, self.grade_model)
+        best_match = EvalHelper.find_best_match_assignment(self.possible_attr_matches, self.grade_model)
 
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 4)
@@ -400,7 +401,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_handle_possible_attr_matches_with_gm(self):
         # combines safe and best matches
         # safe matches are excluded from best matches calculation
-        safe_matches, best_matches = ClassComperator.handle_possible_matches(self.possible_attr_matches, self.grade_model)
+        safe_matches, best_matches = EvalHelper.handle_possible_matches(self.possible_attr_matches, self.grade_model)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.apple_attr_2, list(safe_matches.keys())[0])
@@ -414,7 +415,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertIsNone(best_matches.get(self.elderberry_attr_1))
 
     def test_comperator_handle_safe_and_best_matches_empty_already_matched(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, self.best_attr_matches)
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, self.best_attr_matches)
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 4)
         self.assertEqual(match_map[self.apple_attr_1], self.apple_attr_1)
@@ -426,7 +427,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(unmatched[0], self.elderberry_attr_1)
 
     def test_comperator_handle_safe_and_best_matches_empty_with_inst_atts(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, {}, {})
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, {}, {})
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 0)
         self.assertIsInstance(unmatched, list)
@@ -438,14 +439,14 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(unmatched[4], self.elderberry_attr_1)
 
     def test_comperator_handle_safe_and_best_matches_all_empty(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches([], {}, {})
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches([], {}, {})
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 0)
         self.assertIsInstance(unmatched, list)
         self.assertEqual(len(unmatched), 0)
 
     def test_comperator_handle_safe_and_best_matches_safe_matches_empty(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, {}, self.best_attr_matches)
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, {}, self.best_attr_matches)
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 2)
         self.assertEqual(match_map[self.apple_attr_1], self.apple_attr_1)
@@ -457,7 +458,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(unmatched[2], self.elderberry_attr_1)
 
     def test_comperator_handle_safe_and_best_matches_best_matches_empty(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, {})
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, {})
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 2)
         self.assertEqual(match_map[self.apple_attr_2], self.apple_attr_2)
@@ -473,7 +474,7 @@ class TestClassComperator(unittest.TestCase):
             self.apple_attr_1: self.banana_attr_1,  # contradiction with already matched but should be ignored
             self.banana_attr_1: self.banana_attr_1
         }
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, best_matches_contradiction, self.already_matched_attr)
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, self.safe_attr_matches, best_matches_contradiction, self.already_matched_attr)
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 3)
         self.assertEqual(match_map[self.apple_attr_2], self.apple_attr_2)
@@ -483,7 +484,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(len(unmatched), 0)
 
     def test_comperator_handle_safe_and_best_matches_empty_except_allready_matched(self):
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_attr_list, {}, {}, self.already_matched_attr)
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_attr_list, {}, {}, self.already_matched_attr)
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 0)
         self.assertIsInstance(unmatched, list)
@@ -627,14 +628,14 @@ class TestClassComperator(unittest.TestCase):
     # tests for compare operations
     # NOTE: here only methods are tested that differ in implementation from the attribute tests and the general test if the method call works
     def test_comperator_get_safe_matches_operations(self):
-        safe_matches = ClassComperator.get_safe_matches(self.possible_op_matches)
+        safe_matches = EvalHelper.get_safe_matches(self.possible_op_matches)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.apple_op_2, list(safe_matches.keys())[0])
         self.assertEqual(self.apple_op_2, list(safe_matches.values())[0])
 
     def test_comperator_find_best_op_match_assignment_with_gm(self):
-        best_match = ClassComperator.find_best_match_assignment(self.possible_op_matches, self.grade_model)
+        best_match = EvalHelper.find_best_match_assignment(self.possible_op_matches, self.grade_model)
 
         self.assertIsInstance(best_match, dict)
         self.assertEqual(len(best_match), 4)
@@ -647,7 +648,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_handle_possible_op_matches_with_gm(self):
         # combines safe and best matches
         # safe matches are excluded from best matches calculation
-        safe_matches, best_matches = ClassComperator.handle_possible_matches(self.possible_op_matches, self.grade_model)
+        safe_matches, best_matches = EvalHelper.handle_possible_matches(self.possible_op_matches, self.grade_model)
         self.assertIsInstance(safe_matches, dict)
         self.assertEqual(len(safe_matches), 1)
         self.assertEqual(self.apple_op_2, list(safe_matches.keys())[0])
@@ -665,7 +666,7 @@ class TestClassComperator(unittest.TestCase):
             self.apple_op_1: self.banana_op_1,  # contradiction with already matched but should be ignored
             self.banana_op_1: self.banana_op_1
         }
-        match_map, unmatched = ClassComperator.handle_safe_and_best_matches(self.inst_op_list, self.safe_op_matches, best_matches_contradiction, self.already_matched_op)
+        match_map, unmatched = EvalHelper.handle_safe_and_best_matches(self.inst_op_list, self.safe_op_matches, best_matches_contradiction, self.already_matched_op)
         self.assertIsInstance(match_map, dict)
         self.assertEqual(len(match_map), 3)
         self.assertEqual(match_map[self.apple_op_2], self.apple_op_2)
@@ -801,7 +802,7 @@ class TestClassComperator(unittest.TestCase):
     def test_comparator_compare_content_empty(self):
         student_model = UMLModel("@startuml\n@enduml")
         instructor_model = UMLModel("@startuml\n@enduml")
-        result = ClassComperator.compare_content(instructor_model, student_model, {}, self.grade_model)
+        result = ClassComperator.compare_class_content(instructor_model, student_model, {}, self.grade_model)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 6)
         self.assertIsInstance(result[0], dict)
@@ -819,7 +820,7 @@ class TestClassComperator(unittest.TestCase):
 
     def test_comparator_compare_content_instructor_empty(self):
         instructor_model = UMLModel("@startuml\n@enduml")
-        result = ClassComperator.compare_content(instructor_model, self.student_model, self.true_class_matches, self.grade_model)
+        result = ClassComperator.compare_class_content(instructor_model, self.student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 6)
         self.assertIsInstance(result[0], dict)
@@ -837,7 +838,7 @@ class TestClassComperator(unittest.TestCase):
 
     def test_comparator_compare_content_student_empty(self):
         student_model = UMLModel("@startuml\n@enduml")
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_content(self.instructor_model, student_model, self.true_class_matches, self.grade_model)
+        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 0)
         self.assertIsInstance(misplaced_attr_map, dict)
@@ -863,7 +864,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(miss_oper_list[4], self.elderberry_op_1)
 
     def test_comparator_compare_content_equal(self):
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_content(self.instructor_model, self.instructor_model, self.match_map_id, self.grade_model)
+        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.instructor_model, self.match_map_id, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 5)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apple_attr_1)
@@ -893,7 +894,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(len(miss_oper_list), 0)
 
     def test_comparator_compare_content_different(self):
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_content(self.instructor_model, self.student_model, self.true_class_matches, self.grade_model)
+        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 2)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apples_attr_1)

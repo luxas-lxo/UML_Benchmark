@@ -91,8 +91,8 @@ class TestUMLModel(unittest.TestCase):
         self.assertEqual(uml_model.relation_list[0].source, self.uml_class)
         self.assertEqual(uml_model.relation_list[0].destination, self.uml_enum)
         self.assertEqual(uml_model.relation_list[0].type, UMLRelationType.ASSOCIATION)
-        self.assertEqual(uml_model.relation_list[0].s_multiplicity, "")
-        self.assertEqual(uml_model.relation_list[0].d_multiplicity, "")
+        self.assertEqual(uml_model.relation_list[0].s_multiplicity, "1")
+        self.assertEqual(uml_model.relation_list[0].d_multiplicity, "1")
 
     def test_uml_model_repr(self):
         uml_model = UMLModel(class_list=[self.uml_class], enum_list=[self.uml_enum], relation_list=[self.uml_relation_1])
@@ -123,7 +123,7 @@ class TestUMLModel(unittest.TestCase):
             "\tVALUE1",
             "\tVALUE2",
             "}",
-            "TestClass \"\" -- \"\" TestEnum",
+            "TestClass \"1\" -- \"1\" TestEnum",
             "@enduml"
         ]
         expected_plantuml = '\n'.join(expected_plantuml_lines)
