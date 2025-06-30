@@ -39,13 +39,13 @@ class EvalModel:
         self.misplaced_attr_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[1]
         self.misplaced_attr_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_attr_map.items()}
         self.missed_attr_list: List[Tuple[UMLClass, UMLAttribute]] = compare_class_content[2]
-        self.missed_attr_list_str: List[str] = [f"{str(cls)}: {str(attr)}" for cls, attr in self.missed_attr_list]
+        self.missed_attr_list_str: List[str] = [f"{str(attr)}" for attr in self.missed_attr_list]
         self.oper_matched_map: Dict[UMLOperation, UMLOperation] = compare_class_content[3]
         self.oper_matched_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.oper_matched_map.items()}
         self.misplaced_oper_map: Dict[UMLOperation, UMLOperation] = compare_class_content[4]
         self.misplaced_oper_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_oper_map.items()}
         self.missed_oper_list: List[Tuple[UMLClass, UMLOperation]] = compare_class_content[5]
-        self.missed_oper_list_str: List[str] = [f"{str(cls)}: {str(op)}" for cls, op in self.missed_oper_list]
+        self.missed_oper_list_str: List[str] = [f"{str(op)}" for op in self.missed_oper_list]
 
         # Algorithm 3: Find split classes in InstructorModel and StudentModel
         self.split_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map, self.misplaced_attr_map, self.oper_matched_map, self.misplaced_oper_map)
