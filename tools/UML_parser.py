@@ -123,6 +123,7 @@ class UMLParser:
 
         return enums
     
+    # TODO: parse role names
     @staticmethod
     def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 1.1.1) A m1 -> m2 B : desc

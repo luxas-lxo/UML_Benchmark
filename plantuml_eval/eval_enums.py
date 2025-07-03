@@ -56,6 +56,9 @@ class EnumComperator:
         enum_match_map.update(new_matched_enums)
         miss_enum_list.extend(new_miss_inst_enums)
 
+        # NOTE: maybe also search for enums that are a match with a class
+        # TODO: match values before proceeding with missplaced values
+
         #10: studClassList ← StudentModel.getClass()
         stud_class_list = student_model.class_list
         #11: studAttrList ← StudentModel.getAttribute()

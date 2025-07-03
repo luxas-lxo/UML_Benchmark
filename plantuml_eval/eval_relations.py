@@ -196,7 +196,7 @@ class RelationComperator:
             rel for rel in miss_relation_list
             if not relation_match_map.get(rel)
             and not inst_assoc_link_match_map.get(rel)
-            and not any(k.destination == rel for k in inst_assoc_link_match_map.keys())
+            #and not any(k.destination == rel for k in inst_assoc_link_match_map.keys())
             and not any(k[0] == rel for k in stud_assoc_link_match_map.keys())
             and not any(k[1] == rel for k in stud_assoc_link_match_map.keys())
             and not any(k[0] == rel for k in sec_derivation_inst_map.keys())

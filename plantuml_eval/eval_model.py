@@ -54,6 +54,19 @@ class EvalModel:
         # Algorithm 4: Find merged classes in InstructorModel and StudentModel
         self.merge_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_merge_match(self.instructor_model, self.class_match_map, self.misplaced_attr_map, self.misplaced_oper_map)
         self.merge_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.merge_class_map.items()}
+
+        # **adeded additionally**
+        # NOTE: maybe update the missing list in Algorithm 3 and 4
+        self.temp_missing_classes: List[UMLClass] = [
+            cls for cls in self.missing_classes
+            if (
+                cls not in self.split_class_map.keys() and
+                not any(
+                    cls == split_cls_1 or cls == split_cls_2
+                    for split_cls_1, split_cls_2 in self.split_class_map.keys()
+                )
+            )
+        ]
         
         # Algorithm 6: Compare ENUM in InstructorModel and StudentModel
         compare_enums = EnumComperator.compare_enums(self.instructor_model, self.student_model, self.grade_model)
