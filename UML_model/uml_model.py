@@ -1,6 +1,6 @@
 from UML_model.uml_class import UMLClass
 from UML_model.uml_enum import UMLEnum
-from UML_model.uml_relation import UMLRelation, UMLRelationType
+from UML_model.uml_relation import UMLRelation
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
 
@@ -70,33 +70,34 @@ class UMLModel:
     def find_relation(self, relation_name: str) -> Optional[UMLRelation]:
         return self.relation_lookup.get(relation_name.lower().strip())
 
-    def build_class_reachability_map(self) -> Dict[UMLClass, List[UMLClass]]:
-        adjacency_reach_map: Dict[UMLClass, List[UMLClass]] = {uml_class: [] for uml_class in self.class_list}
-        class_relations: List[UMLRelation] = [relation for relation in self.relation_list if isinstance(relation.source, UMLClass) and isinstance(relation.destination, UMLClass)]
-        for relation in class_relations:
+    def build_reachability_map(self) -> Dict[UMLElement, List[UMLElement]]:
+        cls_enum_list = self.class_list + self.enum_list
+        adjacency_reach_map: Dict[UMLElement, List[UMLElement]] = {elem: [] for elem in cls_enum_list}
+        elem_relations: List[UMLRelation] = [relation for relation in self.relation_list if isinstance(relation.source, (UMLClass, UMLEnum)) and isinstance(relation.destination, (UMLClass, UMLEnum))]
+        for relation in elem_relations:
             adjacency_reach_map[relation.source].append(relation.destination)
             if not relation.directed:
                 adjacency_reach_map[relation.destination].append(relation.source)
         
-        def dfs(cls: UMLClass, visited: Set[UMLClass]):
-            for neighbor in adjacency_reach_map.get(cls, []):
+        def dfs(elm: UMLElement, visited: Set[UMLElement]):
+            for neighbor in adjacency_reach_map.get(elm, []):
                 if neighbor not in visited:
                     visited.add(neighbor)
                     dfs(neighbor, visited)
 
-        reach_map: Dict[UMLClass, List[UMLClass]] = {}
-        for cls in self.class_list:
-            visited: Set[UMLClass] = set()
-            visited.add(cls)
-            dfs(cls, visited)
-            reachable = list(visited - {cls})
+        reach_map: Dict[UMLElement, List[UMLElement]] = {}
+        for elm in cls_enum_list:
+            visited: Set[UMLElement] = set()
+            visited.add(elm)
+            dfs(elm, visited)
+            reachable = list(visited - {elm})
             has_self_relation = any(
-                rel.source == cls and rel.destination == cls
+                rel.source == elm and rel.destination == elm
                 for rel in self.relation_list
             )
             if has_self_relation:
-                reachable.append(cls)
-            reach_map[cls] = reachable
+                reachable.append(elm)
+            reach_map[elm] = reachable
 
         return reach_map
 

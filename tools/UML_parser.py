@@ -125,13 +125,13 @@ class UMLParser:
     
     @staticmethod
     def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
-        # 1.1.1) A m1 -> m2 B
+        # 1.1.1) A m1 -> m2 B : desc
         bin_pattern_1 = re.compile(
-            r'(\w+)\s+"([^"]*)"\s+(--|--\*|--o)\s+"([^"]*)"\s+(\w+)',
+            r'(\w+)\s+"([^"]*)"\s+(--|--\*|--o)\s+"([^"]*)"\s+(\w+)(?:\s*:\s*(.*))?',
             re.MULTILINE
         )
         for match in bin_pattern_1.finditer(uml_text):
-            raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
+            raw_a, raw_m1, raw_type, raw_m2, raw_b, desc = match.groups()
             a = raw_a
             b = raw_b
 
@@ -139,52 +139,54 @@ class UMLParser:
                 rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 m1 = raw_m1.strip()
                 m2 = raw_m2.strip()
+                description = desc.strip() if desc else ""
                 relation = UMLRelation(
-                    type = rel_type, 
-                    source = element_lookup[a], 
-                    destination = element_lookup[b], 
-                    s_multiplicity = m1, 
-                    d_multiplicity = m2
+                    type=rel_type,
+                    source=element_lookup[a],
+                    destination=element_lookup[b],
+                    s_multiplicity=m1,
+                    d_multiplicity=m2,
+                    description=description
                 )
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
-        # 1.1.2) A -> B
+        # 1.1.2) A -> B : desc
         bin_pattern_2 = re.compile(
-            r'(\w+)\s+(--|--\*|--o)\s+(\w+)',
+            r'(\w+)\s+(--|--\*|--o)\s+(\w+)(?:\s*:\s*(.*))?',
             re.MULTILINE
         )
 
         for match in bin_pattern_2.finditer(uml_text):
-            raw_a, raw_type, raw_b = match.groups()
+            raw_a, raw_type, raw_b, desc = match.groups()
             a = raw_a
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
+                description = desc.strip() if desc else ""
                 relation = UMLRelation(
                     type=rel_type,
                     source=element_lookup[a],
-                    destination=element_lookup[b]
+                    destination=element_lookup[b],
+                    description=description
                 )
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod
     def parse_relation_right_to_left(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
-        # 1.2.1) A m1 <- m2 B
+        # 1.2.1) A m1 <- m2 B : desc
         bin_pattern_3 = re.compile(
-            r'(\w+)\s+"([^"]*)"\s+(\*--|o--)\s+"([^"]*)"\s+(\w+)',
+            r'(\w+)\s+"([^"]*)"\s+(\*--|o--)\s+"([^"]*)"\s+(\w+)(?:\s*:\s*(.*))?',
             re.MULTILINE
         )
         for match in bin_pattern_3.finditer(uml_text):
-            raw_a, raw_m1, raw_type, raw_m2, raw_b = match.groups()
+            raw_a, raw_m1, raw_type, raw_m2, raw_b, desc = match.groups()
             a = raw_a
             b = raw_b
 
@@ -192,41 +194,43 @@ class UMLParser:
                 rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
                 m1 = raw_m1.strip()
                 m2 = raw_m2.strip()
+                description = desc.strip() if desc else ""
                 relation = UMLRelation(
-                    type = rel_type, 
-                    source = element_lookup[b], 
-                    destination = element_lookup[a], 
-                    s_multiplicity = m2, 
-                    d_multiplicity = m1
-                )                
+                    type=rel_type,
+                    source=element_lookup[b],
+                    destination=element_lookup[a],
+                    s_multiplicity=m2,
+                    d_multiplicity=m1,
+                    description=description
+                )
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
-        
-        # 1.2.2) A <- B
+
+        # 1.2.2) A <- B : desc
         bin_pattern_4 = re.compile(
-            r'(\w+)\s+(\*--|o--)\s+(\w+)',
+            r'(\w+)\s+(\*--|o--)\s+(\w+)(?:\s*:\s*(.*))?',
             re.MULTILINE
         )
 
         for match in bin_pattern_4.finditer(uml_text):
-            raw_a, raw_type, raw_b = match.groups()
+            raw_a, raw_type, raw_b, desc = match.groups()
             a = raw_a
             b = raw_b
 
             if a in element_lookup and b in element_lookup:
                 rel_type = type_map.get(raw_type.strip(), UMLRelationType.UNKNOWN)
+                description = desc.strip() if desc else ""
                 relation = UMLRelation(
                     type=rel_type,
                     source=element_lookup[b],
-                    destination=element_lookup[a]
+                    destination=element_lookup[a],
+                    description=description
                 )
                 if relation not in relations:
                     relations.append(relation)
             else:
-                # NOTE: maybe later create classes if not found
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod 

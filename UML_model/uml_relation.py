@@ -14,18 +14,19 @@ class UMLRelationType(Enum):
 class UMLRelation(UMLElement, GradeReference):
     #TODO: Rollen entnehmen und verarbeiten -> repr, plantuml, equals, hash, eq
     # aktuell bei gleicher verbindung trotzdem eingetragen???
-    def __init__(self, type: UMLRelationType, source: UMLElement, destination: UMLElement, s_multiplicity: str = "", d_multiplicity: str = ""):
+    def __init__(self, type: UMLRelationType, source: UMLElement, destination: UMLElement, s_multiplicity: str = "", d_multiplicity: str = "", description: str = ""):
         self.type: UMLRelationType = type
         self.source: UMLElement = source
         self.destination: UMLElement = destination
         # NOTE: multiplicity as enum class?
         self.s_multiplicity: str = UMLRelation.normalize_multiplicity(s_multiplicity)
         self.d_multiplicity: str = UMLRelation.normalize_multiplicity(d_multiplicity)
+        self.description: str = description
         self.directed: bool = self.type != UMLRelationType.ASSOCIATION
         super().__init__(f"({self.source.name}, {self.destination.name})")
 
     def __repr__(self):
-        return f"UMLRelation({self.source}, {self.destination}): source multiplicity {self.s_multiplicity} -{self.type.name}- destination multiplicity {self.d_multiplicity if self.d_multiplicity != '' else '_'}"
+        return f"UMLRelation({self.source}, {self.destination}): source multiplicity {self.s_multiplicity} -{self.type.name}- destination multiplicity {self.d_multiplicity if self.d_multiplicity != '' else '_'}: {self.description if self.description else 'empty'}"
     
     def to_plantuml(self) -> str:
         type_map = {
@@ -35,7 +36,7 @@ class UMLRelation(UMLElement, GradeReference):
             UMLRelationType.COMPOSITION: "--*"
         }
         symbol = type_map.get(self.type, "--")
-        return f"{self.source.name} {'\"' + self.s_multiplicity + '\"' if symbol != '..' else ''} {symbol} {'\"' + self.d_multiplicity + '\"' if symbol != '..' else ''} {self.destination.name}"
+        return f"{self.source.name} {'\"' + self.s_multiplicity + '\"' if symbol != '..' else ''} {symbol} {'\"' + self.d_multiplicity + '\"' if symbol != '..' else ''} {self.destination.name}{' : ' + self.description if self.description else ''}"
 
     def __eq__(self, other):
         if not isinstance(other, UMLRelation):
@@ -46,7 +47,8 @@ class UMLRelation(UMLElement, GradeReference):
             self.source == other.source and
             self.s_multiplicity == other.s_multiplicity and
             self.destination == other.destination and
-            self.d_multiplicity == other.d_multiplicity
+            self.d_multiplicity == other.d_multiplicity and 
+            self.description == other.description
         )
 
         if same_direction:
@@ -58,14 +60,15 @@ class UMLRelation(UMLElement, GradeReference):
                 self.source == other.destination and
                 self.s_multiplicity == other.d_multiplicity and
                 self.destination == other.source and
-                self.d_multiplicity == other.s_multiplicity
+                self.d_multiplicity == other.s_multiplicity and
+                self.description == other.description
             )
             return reverse_direction
 
         return False
   
     # NOTE: this is not the same as __eq__, this is used to compare the relation without considering the multiplicities
-    def equals(self, other) -> bool:
+    def equals(self, other: 'UMLRelation') -> bool:
         if not isinstance(other, UMLRelation):
             return NotImplemented
         
@@ -87,12 +90,18 @@ class UMLRelation(UMLElement, GradeReference):
             return reverse_direction
 
         return False
-      
+
+    def classes_equal(self, other: 'UMLRelation') -> bool:
+        if not isinstance(other, UMLRelation):
+            return NotImplemented
+
+        return (self.source == other.source and self.destination == other.destination) or (not self.directed and self.destination == other.source and self.source == other.destination)
+
     def __hash__(self):
         if self.directed:
-            return hash((self.type, self.source.name, self.destination.name))
+            return hash((self.type, (self.source.name, self.destination.name), self.s_multiplicity, self.d_multiplicity, self.description))
         else:
-            return hash((self.type, frozenset([self.source.name, self.destination.name])))
+            return hash((self.type, frozenset([self.source.name, self.destination.name]), self.s_multiplicity, self.d_multiplicity, self.description))
 
     def swap_source_destination(self) -> 'UMLRelation':
         if self.directed:

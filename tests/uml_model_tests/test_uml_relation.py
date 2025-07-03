@@ -48,7 +48,7 @@ class TestUMLRelation(unittest.TestCase):
         self.assertIsInstance(relation, UMLElement)
 
     def test_uml_relation_repr(self):
-        expected = "UMLRelation(UMLClass(Source), UMLClass(Destination)): source multiplicity 1 -ASSOCIATION- destination multiplicity *"
+        expected = "UMLRelation(UMLClass(Source), UMLClass(Destination)): source multiplicity 1 -ASSOCIATION- destination multiplicity *: empty"
         self.assertEqual(repr(self.relation), expected)
 
     def test_uml_relation_str(self):

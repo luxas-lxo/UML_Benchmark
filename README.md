@@ -82,5 +82,4 @@ If you use this project in academic work, please cite the original paper:
   keywords={automated grading;class diagrams;model comparison},
   doi={10.1109/MODELS-C.2019.00106}
 }
-
 ```

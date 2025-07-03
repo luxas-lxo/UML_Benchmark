@@ -68,8 +68,18 @@ class EvalModel:
         compare_relations = RelationComperator.compare_relations(self.instructor_model, self.student_model, self.class_match_map, self.missing_classes, self.enum_match_map, self.missing_enums)
         self.relation_match_map: Dict[UMLRelation, UMLRelation] = compare_relations[0]
         self.relation_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.relation_match_map.items()}
-        self.derivation_list: List[UMLRelation] = compare_relations[1]
-        self.derivation_list_str: List[str] = [str(rel) for rel in self.derivation_list]
+        self.inst_assoc_link_match_map: Dict[UMLRelation, Tuple[UMLClass, UMLClass]] = compare_relations[1]
+        self.inst_assoc_link_match_map_str: Dict[str, Tuple[str, str]] = {str(k): (str(v[0]), str(v[1])) for k, v in self.inst_assoc_link_match_map.items()}
+        self.stud_assoc_link_match_map: Dict[Tuple[UMLClass, UMLClass], UMLRelation] = compare_relations[2]
+        self.stud_assoc_link_match_map_str: Dict[Tuple[str, str], str] = {(str(k[0]), str(k[1])): str(v) for k, v in self.stud_assoc_link_match_map.items()}
+        self.sec_derivation_inst_map: Dict[Tuple[UMLRelation, UMLRelation], UMLRelation] = compare_relations[3]
+        self.sec_derivation_inst_map_str: Dict[Tuple[str, str], str] = {(str(k[0]), str(k[1])): str(v) for k, v in self.sec_derivation_inst_map.items()}
+        self.sec_derivation_stud_map: Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]] = compare_relations[4]
+        self.sec_derivation_stud_map_str: Dict[str, Tuple[str, str]] = {str(k): (str(v[0]), str(v[1])) for k, v in self.sec_derivation_stud_map.items()}
+        self.miss_relation_list: List[UMLRelation] = compare_relations[5]
+        self.miss_relation_list_str: List[str] = [str(rel) for rel in self.miss_relation_list]
+
+
 
     def print_grade_model(self):
         if self.grade_model:
@@ -134,9 +144,19 @@ class EvalModel:
         print("\nRelation Matches:")
         for inst_relation, stud_relation in self.relation_match_map.items():
             print(f"{str(inst_relation)} -> {str(stud_relation)}")
+        print("\nAssociation Link Matches:")
+        for inst_relation, (stud_cls_1, stud_cls_2) in self.inst_assoc_link_match_map.items():
+            print(f"{str(inst_relation)} -> ({str(stud_cls_1)}, {str(stud_cls_2)})")
+        for (stud_cls_1, stud_cls_2), inst_relation in self.stud_assoc_link_match_map.items():
+            print(f"({str(stud_cls_1)}, {str(stud_cls_2)}) -> {str(inst_relation)}")
         print("\nDerivations:")
-        for derivation in self.derivation_list:
-            print(f"Derivation: {str(derivation)}")
+        for derivation, rel in self.sec_derivation_inst_map.items():
+            print(f"({str(derivation[0])}, {str(derivation[1])}) -> {str(rel)}")
+        for rel, derivation in self.sec_derivation_stud_map.items():
+            print(f"{str(rel)} -> ({str(derivation[0])}, {str(derivation[1])})")
+        print("\nMissing Relations:")
+        for missing in self.miss_relation_list:
+            print(f"Missing: {str(missing)}")
 
     def __repr__(self):
         output = ["Evaluation Model Summary:"]
@@ -187,8 +207,14 @@ class EvalModel:
         output.append("\nAlgorithm 5: Compare Relations")
         output.append("\tRelation Matches:")
         output.append(f"\t{self.relation_match_map_str}")
+        output.append("\tAssociation Link Matches:")
+        output.append(f"\t{self.inst_assoc_link_match_map_str}")
+        output.append(f"\t{self.stud_assoc_link_match_map_str}")
         output.append("\tRelation Derivations:")
-        output.append(f"\t{self.derivation_list_str}")
+        output.append(f"\t{self.sec_derivation_inst_map_str}")
+        output.append(f"\t{self.sec_derivation_stud_map_str}")
+        output.append("\tMissing Relations:")
+        output.append(f"\t{self.miss_relation_list_str}")
         return "\n".join(output)
     
     def __str__(self):

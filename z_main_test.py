@@ -26,7 +26,7 @@ grade_model_ss2015.add_relation_grade_structure(instructor_model.relation_lookup
 grade_model_ss2015.add_relation_grade_structure(instructor_model.relation_lookup["(square, (position, piece))"], 1.0, 1.0)
 
 eval_model = EvalModel(instructor_model, student_model, grade_model_ss2015)
-#print(repr(eval_model))
+print(repr(eval_model))
 eval_model.print_compare_classes()
 eval_model.print_compare_enums()
 eval_model.print_compare_relations()
