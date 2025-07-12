@@ -1,5 +1,5 @@
 from UML_model.uml_model import UMLModel
-from UML_model.uml_class import UMLVisability, UMLAttribute, UMLDataType, UMLClass, UMLOperation
+from UML_model.uml_class import UMLVisibility, UMLAttribute, UMLDataType, UMLClass, UMLOperation
 from UML_model.uml_enum import UMLEnum, UMLValue
 from UML_model.uml_relation import UMLRelation, UMLRelationType
 
@@ -8,10 +8,10 @@ import unittest
 class TestUMLModel(unittest.TestCase):
     def setUp(self):
         # Initialize test data for UMLClass, UMLEnum, and UMLRelation
-        self.att1 = UMLAttribute(name="attribute1", data_type=UMLDataType.STR, visibility=UMLVisability.PUBLIC)
-        self.att2 = UMLAttribute(name="attribute2", data_type=UMLDataType.INT, visibility=UMLVisability.PRIVATE)
-        self.op1 = UMLOperation(name="operation1", return_types=[UMLDataType.VOID], visibility=UMLVisability.PUBLIC)
-        self.op2 = UMLOperation(name="operation2", return_types=[UMLDataType.INT], visibility=UMLVisability.PRIVATE)
+        self.att1 = UMLAttribute(name="attribute1", data_type=UMLDataType.STR, visibility=UMLVisibility.PUBLIC)
+        self.att2 = UMLAttribute(name="attribute2", data_type=UMLDataType.INT, visibility=UMLVisibility.PRIVATE)
+        self.op1 = UMLOperation(name="operation1", return_types=[UMLDataType.VOID], visibility=UMLVisibility.PUBLIC)
+        self.op2 = UMLOperation(name="operation2", return_types=[UMLDataType.INT], visibility=UMLVisibility.PRIVATE)
         self.uml_class = UMLClass(name="TestClass", attributes=[self.att1, self.att2], operations=[self.op1, self.op2])
 
         self.value1 = UMLValue(name="VALUE1")

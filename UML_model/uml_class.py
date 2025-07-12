@@ -6,6 +6,16 @@ from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import textwrap
 import shutil
+import logging
+
+logger = logging.getLogger("uml_class")
+logger.setLevel(logging.DEBUG)
+
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('[%(levelname)s] - %(name)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 class UMLDataType(Enum):
     # NOTE: can be extended with more data types if needed
@@ -14,7 +24,11 @@ class UMLDataType(Enum):
     FLOAT = "float"
     BOOL = "bool"
     VOID = "void"
+    # NOTE: UNKNOWN either indicates that the data type is not specified or not a standard data type
+    # could be split up in later versions
     UNKNOWN = ""
+    # NOTE: ERROR is used to indicate that the datatype was tried to be set but is not specified
+    ERROR = "error"
 
     @staticmethod
     def from_string(type_str: str) -> Optional['UMLDataType']:
@@ -40,20 +54,41 @@ class UMLDataType(Enum):
 
         return type_aliases.get(normalized, UMLDataType.UNKNOWN)
 
-class UMLVisability(Enum):
+class UMLVisibility(Enum):
     PUBLIC = "+"
     PRIVATE = "-"
     PROTECTED = "#"
     PACKAGE = "~"
-    UNKNOWN = ""
+    # NOTE: UNKNOWN is used to indicate that no visibility is specified
+    UNKNOWN = "" 
+    # NOTE: ERRROR means the syntax was not correct e.g. the symvol was not recognized
+    ERROR = "error"
+
+    @staticmethod
+    def from_string(vis_str: str) -> Optional['UMLVisibility']:
+        normalized = vis_str.strip().lower()
+        
+        vis_aliases = {
+            "+": UMLVisibility.PUBLIC,
+            "-": UMLVisibility.PRIVATE,
+            "#": UMLVisibility.PROTECTED,
+            "~": UMLVisibility.PACKAGE,
+            "": UMLVisibility.UNKNOWN,
+        }
+
+        res = vis_aliases.get(normalized, UMLVisibility.ERROR)
+        if res == UMLVisibility.ERROR:
+            logger.warning(f"UMLVisibility.from_string: '{vis_str}' is not a valid visibility modifier, returning UMLVisibility.ERROR")
+
+        return res
 
 class UMLAttribute(GradeReference):
     # NOTE: add other specifications if needed (e.g. multiplicity constraints or modifier)
-    def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisability = UMLVisability.UNKNOWN, derived: bool = False):
+    def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisibility = UMLVisibility.UNKNOWN, derived: bool = False):
         self.name: str = name
         self.data_type: UMLDataType = data_type
         self.initial: str = initial
-        self.visibility: UMLVisability = visibility
+        self.visibility: UMLVisibility = visibility
         self.derived: bool = derived
         self.reference: Optional[UMLClass] = None
     
@@ -65,13 +100,12 @@ class UMLAttribute(GradeReference):
     
     def to_plantuml(self) -> str:
         name_part = ('/' if self.derived else '') + self.name
-        if self.data_type != UMLDataType.UNKNOWN:
+        type_part = ''
+        if self.data_type != UMLDataType.UNKNOWN and self.data_type != UMLDataType.ERROR:
             type_part = ': ' + self.data_type.value
-            if self.initial != '':
-                type_part += ' = ' + self.initial
-        else:
-            type_part = ''
-        return f"{self.visibility.value}{name_part}{type_part}"
+        if self.initial != '' and self.initial != '--error--':
+            type_part += ' = ' + self.initial
+        return f"{self.visibility.value if self.visibility.value != "error" else ""}{name_part}{type_part}"
 
     def __hash__(self):
         return hash((self.name, self.data_type, self.initial, self.visibility, self.derived))
@@ -107,11 +141,11 @@ class UMLAttribute(GradeReference):
 
 class UMLOperation(GradeReference):
     # NOTE: add other specifications if needed (e.g. modifier)
-    def __init__(self, name: str, params: Optional[Dict[str, UMLDataType]] = None, return_types: Optional[List[UMLDataType]] = None, visibility: UMLVisability = UMLVisability.UNKNOWN):
+    def __init__(self, name: str, params: Optional[Dict[str, UMLDataType]] = None, return_types: Optional[List[UMLDataType]] = None, visibility: UMLVisibility = UMLVisibility.UNKNOWN):
         self.name: str = name
         self.params: Dict[str, UMLDataType] = params if params is not None else {}
         self.return_types: List[UMLDataType] = return_types if return_types is not None else [UMLDataType.VOID]
-        self.visibility: UMLVisability = visibility 
+        self.visibility: UMLVisibility = visibility 
         self.reference: Optional[UMLClass] = None  
 
     def __repr__(self): 
@@ -121,7 +155,9 @@ class UMLOperation(GradeReference):
         return f"UMLOperation({self.name})"
     
     def to_plantuml(self) -> str: 
-        return f"{self.visibility.value}{self.name}({', '.join(f'{k}' if v == UMLDataType.UNKNOWN else f'{k}: {v.value}' for k, v in self.params.items())}): {', '.join(t.value for t in self.return_types)}"
+        param_part = ', '.join(f'{k}' if v in (UMLDataType.UNKNOWN, UMLDataType.ERROR) else f'{k}: {v.value}' for k, v in self.params.items())
+        ret_type_part = ': ' + ', '.join(t.value for t in self.return_types) if self.return_types else ''
+        return f"{self.visibility.value}{self.name}({param_part}){ret_type_part}"
     
     def __hash__(self):
         return hash((self.name, tuple(self.params.items()), tuple(self.return_types), self.visibility))

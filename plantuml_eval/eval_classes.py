@@ -2,7 +2,7 @@ from tools.syntactic_check import SyntacticCheck
 from tools.semantic_check import SemanticCheck
 from tools.content_check import ContentCheck
 from tools.relation_check import RelationCheck
-from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisibility
 from UML_model.uml_relation import UMLRelationType
 from UML_model.uml_model import UMLModel
 from grading.grade_metamodel import GradeModel
@@ -164,7 +164,7 @@ class ClassComperator:
                     # NOTE: the following could be merged with the previous if statement, but we keep it for the formality of the algorithm
                     #10:else if Ci is superClass of classMatchMap.get(Cs) and Ai is not private then 
                     # NOTE: the authors recomends to follow the inheritance hierarchy all the way up, but for the given test cases, 2 levels of inheritance are sufficient
-                    elif reversed_class_match_map.get(c_s) and (c_i == reversed_class_match_map.get(c_s).super_class or (reversed_class_match_map.get(c_s).super_class and c_i == reversed_class_match_map.get(c_s).super_class.super_class)) and a_i.visibility != UMLVisability.PRIVATE:
+                    elif reversed_class_match_map.get(c_s) and (c_i == reversed_class_match_map.get(c_s).super_class or (reversed_class_match_map.get(c_s).super_class and c_i == reversed_class_match_map.get(c_s).super_class.super_class)) and a_i.visibility != UMLVisibility.PRIVATE:
                         #11:matchedAttrMap.put(As, Ai)
                         # TODO: mark the partial points somehow
                         possible_attr_matches[a_i].append(a_s)
@@ -230,7 +230,7 @@ class ClassComperator:
                         possible_oper_matches[oi].append(os)
                     #23:else if Ci is superClass of classMatchMap.get(Cs) and Oi is not private then 
                     # NOTE: the authors recomends to follow the inheritance hierarchy all the way up, but for the given test cases, 2 levels of inheritance are sufficient
-                    elif reversed_class_match_map.get(cs) and (ci == reversed_class_match_map.get(cs).super_class or (reversed_class_match_map.get(cs).super_class and ci == reversed_class_match_map.get(cs).super_class.super_class)) and oi.visibility != UMLVisability.PRIVATE:
+                    elif reversed_class_match_map.get(cs) and (ci == reversed_class_match_map.get(cs).super_class or (reversed_class_match_map.get(cs).super_class and ci == reversed_class_match_map.get(cs).super_class.super_class)) and oi.visibility != UMLVisibility.PRIVATE:
                         #24:matchedOperMap.put(Os, Oi) 
                         # TODO: mark the partial points somehow
                         possible_oper_matches[oi].append(os)
@@ -272,36 +272,24 @@ class ClassComperator:
     def compare_class_content(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], List[UMLAttribute], Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], List[UMLOperation]]:
         logger.info("starting compare content method")
 
-        #WARNING: if stud_class mapped to multiple inst_classes -> problem
-        # NOTE: should not be possible with the current algorithm 1
+        # WARNING: if stud_class mapped to multiple inst_classes -> problem
+        # NOTE: problem case should not trigger with the current algorithm 1
         reversed_class_match_map: Dict[UMLClass, UMLClass] = {v: k for k, v in class_match_map.items()}
 
         #2: instList← InstructorModel.getAttribute() 
-        inst_att_list: List[UMLAttribute] = []
-        for inst_cls in instructor_model.class_list:
-            for att in inst_cls.attributes:
-                inst_att_list.append(att)
+        inst_att_list: List[UMLAttribute] = instructor_model.attribute_list
 
         #3: studList← StudentModel.getAttribute() 
-        stud_att_list: List[UMLAttribute] = []
-        for stud_cls in student_model.class_list:
-            for att in stud_cls.attributes:
-                stud_att_list.append(att)
+        stud_att_list: List[UMLAttribute] = student_model.attribute_list
 
         #4 - #14
         attr_match_map, misplaced_attr_map, miss_attr_list = ClassComperator.compare_attributes(inst_att_list, stud_att_list, class_match_map, reversed_class_match_map, grade_model)
 
         #15: instList← InstructorModel.getOperation()
-        inst_opr_list: List[UMLOperation] = []
-        for inst_cls in instructor_model.class_list:
-            for opr in inst_cls.operations:
-                inst_opr_list.append(opr)
+        inst_opr_list: List[UMLOperation] = instructor_model.operation_list
 
         #16: studList← StudentModel.getOperation() 
-        stud_opr_list: List[UMLOperation] = []
-        for stud_cls in student_model.class_list:
-            for opr in stud_cls.operations:
-                stud_opr_list.append(opr)
+        stud_opr_list: List[UMLOperation] = student_model.operation_list
 
         #17 - #28
         oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_operations(inst_opr_list, stud_opr_list, class_match_map, reversed_class_match_map, grade_model)

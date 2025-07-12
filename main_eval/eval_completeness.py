@@ -1,7 +1,6 @@
 from plantuml_eval.eval_model import EvalModel
 from main_eval.eval_metrics import ScoringCriteria
 from UML_model.uml_relation import UMLRelationType
-from typing import Set
 
 class CompletenessEvaluator:
     @staticmethod
@@ -74,7 +73,8 @@ class CompletenessEvaluator:
     # NOTE: role names are not implemented in the PlantUML parser, so this method is a placeholder.
     @staticmethod
     def evaluate_role_names(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        return criteria  
+        criteria.score = 1.0
+        return criteria 
 
     @staticmethod
     def evaluate_enumerations(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
@@ -84,6 +84,7 @@ class CompletenessEvaluator:
         criteria.score = enumeration_completeness_score
         return criteria
     
+    # TODO: enum values need to be matched
     @staticmethod
     def evaluate_enum_values(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
         enum_value_completeness_score: float = 1.0

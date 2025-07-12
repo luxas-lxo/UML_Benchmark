@@ -1,6 +1,7 @@
 import Levenshtein
 from typing import Tuple
 import logging
+import re
 
 logger = logging.getLogger("syntactic_check")
 logger.setLevel(logging.DEBUG)
@@ -26,3 +27,13 @@ class SyntacticCheck:
         if similarity >= threshold:
             logger.debug(f"Syntactic match: '{word1}' and '{word2}': score = {similarity:.2f}")
         return (similarity >= threshold, similarity)
+    
+    @staticmethod
+    def is_upper_camel_case(word: str) -> bool:
+        # UpperCamelCase: Starts with uppercase, no underscores, each word starts with uppercase
+        return bool(re.fullmatch(r'(?:[A-Z][a-z0-9]*)+', word))
+
+    @staticmethod
+    def is_lower_camel_case(word: str) -> bool:
+        # lowerCamelCase: Starts with lowercase, no underscores, each new word starts with uppercase
+        return bool(re.fullmatch(r'[a-z]+(?:[A-Z][a-z0-9]*)*', word))

@@ -1,11 +1,11 @@
-from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability, UMLDataType
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisibility, UMLDataType
 from UML_model.uml_relation import UMLRelation, UMLRelationType
 from UML_model.uml_enum import UMLEnum, UMLValue
 from UML_model.uml_element import UMLElement
 
 import re
 import regex
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging 
 
 logger = logging.getLogger("uml.parser")
@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 class UMLParser:
     
     @staticmethod
-    def parse_attribute(line: str) -> UMLAttribute:
+    def parse_attribute(line: str) -> Optional[UMLAttribute]:
 
         attr_pattern = regex.compile(
             r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$'
@@ -23,38 +23,34 @@ class UMLParser:
         try:
             match = attr_pattern.match(line, timeout = 10)  
         except regex.TimeoutError:
-            raise ValueError(f"Regex timeout beim Parsen der Attribut-Zeile: '{line}'")
+            raise ValueError(f"Regex timeout while parsing attribute line: '{line}'")
 
         if not match:
-            raise ValueError(f"Ungültiges Attribut-Format: '{line}'")
-
-        vis_symbol = match.group("visibility") or ""
-        vis_map = {
-            '+': UMLVisability.PUBLIC,
-            '-': UMLVisability.PRIVATE,
-            '#': UMLVisability.PROTECTED,
-            '~': UMLVisability.PACKAGE
-        }
-        visability = vis_map.get(vis_symbol.strip(), UMLVisability.UNKNOWN)
-
+            logger.warning(f"Invalid attribute format in line: '{line}'")
+            return None
+        
         name = match.group("name")
         derived = bool(match.group("derived"))
-        datatype_str = match.group("type") or "unknown"
-        datatype = UMLDataType.from_string(datatype_str)
-        initial = match.group("initial") or ""
+        vis_symbol = match.group("visibility") or ""
+        visibility = UMLVisibility.from_string(vis_symbol)
 
-        return UMLAttribute(
-            name=name,
-            data_type=datatype,
-            initial=initial.strip(),
-            visibility=visability,
-            derived=derived
-        )
+        if match.group("type") is not None and match.group("type").strip() == "":
+            logger.warning(f"Data type not specified for attribute '{name}', setting data type to UMLDataType.ERROR due to syntax error.")
+            datatype = UMLDataType.ERROR
+        else:
+            datatype_str = match.group("type") or ""
+            datatype = UMLDataType.from_string(datatype_str)
+
+        if match.group("initial") is not None and match.group("initial").strip() == "":
+            logger.warning(f"Initial value not specified for attribute '{name}', syntax error.")    
+            initial = "--error--"
+        else:
+            initial = (match.group("initial") or "").strip()
+
+        return UMLAttribute(name=name, data_type=datatype, initial=initial, visibility=visibility, derived=derived)
 
     @staticmethod
     def parse_operation(line: str) -> UMLOperation:
-        import regex
-
         operation_pattern = regex.compile(
             r'^(?P<visibility>[+#\-~])?\s*(?P<name>\w+)\s*\((?P<params>[^)]*)\)\s*(?::\s*(?P<return_type>[\w<>, ]+))?$'
         )
@@ -62,50 +58,62 @@ class UMLParser:
         try:
             match = operation_pattern.match(line, timeout = 10)
         except regex.TimeoutError:
-            raise ValueError(f"Regex timeout beim Parsen der Operation-Zeile: '{line}'")
+            raise ValueError(f"Regex timeout while parsing operation line: '{line}'")
 
         if not match:
-            raise ValueError(f"Ungültiges Operation-Format: '{line}'")
+            raise ValueError(f"Invalid operation format: '{line}'")
 
         vis_symbol = match.group("visibility") or ""
-        vis_map = {
-            '+': UMLVisability.PUBLIC,
-            '-': UMLVisability.PRIVATE,
-            '#': UMLVisability.PROTECTED,
-            '~': UMLVisability.PACKAGE
-        }
-        visability = vis_map.get(vis_symbol.strip(), UMLVisability.UNKNOWN)
+        visibility = UMLVisibility.from_string(vis_symbol)
 
         name = match.group("name")
         param_str = match.group("params").strip()
         return_type_str = (match.group("return_type") or "void").strip()
 
-        params = {}
+        params: Dict[str, UMLDataType] = {}
         if param_str:
             for param in param_str.split(","):
                 param = param.strip()
                 if ":" in param:
                     pname, ptype = map(str.strip, param.split(":", 1))
-                    params[pname] = UMLDataType.from_string(ptype)
+                    if ptype.strip() == "":
+                        logger.warning(f"Data type not specified for parameter '{pname}', setting data type to UMLDataType.ERROR due to syntax error.")
+                        params[pname] = UMLDataType.ERROR
+                    else:
+                        params[pname] = UMLDataType.from_string(ptype)
                 else:
                     params[param] = UMLDataType.UNKNOWN
 
-        return_types = [UMLDataType.from_string(t.strip()) for t in return_type_str.split(",")]
-        return UMLOperation(name=name, params=params, return_types=return_types, visibility=visability)
+        if return_type_str is not None and return_type_str.strip() == "":
+            logger.warning(f"Return type not specified for operation '{name}', setting return type to UMLDataType.ERROR due to syntax error.")
+            return_types = [UMLDataType.ERROR]
+        else:
+            return_types = [UMLDataType.from_string(t.strip()) if t.strip() != "" else UMLDataType.ERROR for t in return_type_str.split(",")]
+            if UMLDataType.ERROR in return_types:
+                logger.warning(f"Invalid return type(s) for operation '{name}', setting to UMLDataType.ERROR due to syntax error.")
+
+        return UMLOperation(name=name, params=params, return_types=return_types, visibility=visibility)
 
     @staticmethod
     def parse_plantuml_classes(uml_text: str) -> List[UMLClass]:
-
-        class_pattern = re.compile(r'class\s+(\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
+        class_pattern = re.compile(
+            r'class\s+(?P<name>\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*(?P<body>[^}]*)\})?',
+            re.MULTILINE | re.DOTALL
+        )
         classes = []
 
         for match in class_pattern.finditer(uml_text):
-            name = match.group(1)
-            body = match.group(2) or ""
+            name = match.group("name")
+            body = match.group("body") or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            attributes = [UMLParser.parse_attribute(line) for line in lines if "(" not in line and ")" not in line]
+            attributes = []
+            for line in lines:
+                if "(" not in line and ")" not in line:
+                    attr = UMLParser.parse_attribute(line)
+                    if attr is not None:
+                        attributes.append(attr)
             operations = [UMLParser.parse_operation(line) for line in lines if "(" in line and ")" in line]
-            classes.append(UMLClass(name, attributes, operations)) 
+            classes.append(UMLClass(name, attributes, operations))
 
         return classes
     

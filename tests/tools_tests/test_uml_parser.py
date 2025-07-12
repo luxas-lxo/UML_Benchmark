@@ -1,5 +1,5 @@
 from tools.UML_parser import UMLParser
-from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisability, UMLDataType
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation, UMLVisibility, UMLDataType
 from UML_model.uml_enum import UMLEnum, UMLValue
 import unittest
 
@@ -9,9 +9,9 @@ class TestUMLParser(unittest.TestCase):
         uml_line_1 = ""
         uml_line_2 = "   "
         uml_line_3 = "na me: Str"
-        self.assertRaises(ValueError, UMLParser.parse_attribute, uml_line_1)
-        self.assertRaises(ValueError, UMLParser.parse_attribute, uml_line_2)
-        self.assertRaises(ValueError, UMLParser.parse_attribute, uml_line_3)
+        self.assertIsNone(UMLParser.parse_attribute(uml_line_1))
+        self.assertIsNone(UMLParser.parse_attribute(uml_line_2))
+        self.assertIsNone(UMLParser.parse_attribute(uml_line_3))
 
     def test_parse_attributes_valid_basic(self):
         uml_line = "name"
@@ -49,13 +49,13 @@ class TestUMLParser(unittest.TestCase):
 
     def test_parse_attributes_valid_with_visibility(self):
         uml_line_1 = "+name"
-        expected_1 = UMLAttribute(name="name", visibility=UMLVisability.PUBLIC)
+        expected_1 = UMLAttribute(name="name", visibility=UMLVisibility.PUBLIC)
         uml_line_2 = "-name"
-        expected_2 = UMLAttribute(name="name", visibility=UMLVisability.PRIVATE)
+        expected_2 = UMLAttribute(name="name", visibility=UMLVisibility.PRIVATE)
         uml_line_3 = "# name"
-        expected_3 = UMLAttribute(name="name", visibility=UMLVisability.PROTECTED)
+        expected_3 = UMLAttribute(name="name", visibility=UMLVisibility.PROTECTED)
         uml_line_4 = "~ name"
-        expected_4 = UMLAttribute(name="name", visibility=UMLVisability.PACKAGE)
+        expected_4 = UMLAttribute(name="name", visibility=UMLVisibility.PACKAGE)
 
         result = UMLParser.parse_attribute(uml_line_1)
         self.assertEqual(result, expected_1)
@@ -74,7 +74,7 @@ class TestUMLParser(unittest.TestCase):
 
     def test_parse_attributes_valid_with_all(self):
         uml_line = "-/name: String = 'value'"
-        expected = UMLAttribute(name="name", data_type=UMLDataType.STR, initial="'value'", visibility=UMLVisability.PRIVATE, derived=True)
+        expected = UMLAttribute(name="name", data_type=UMLDataType.STR, initial="'value'", visibility=UMLVisibility.PRIVATE, derived=True)
         result = UMLParser.parse_attribute(uml_line)
         self.assertEqual(result, expected)
     
@@ -115,13 +115,13 @@ class TestUMLParser(unittest.TestCase):
 
     def test_parse_operations_valid_with_visibility(self):
         uml_line_1 = "+name()"
-        expected_1 = UMLOperation(name="name", visibility=UMLVisability.PUBLIC)
+        expected_1 = UMLOperation(name="name", visibility=UMLVisibility.PUBLIC)
         uml_line_2 = "-name()"
-        expected_2 = UMLOperation(name="name", visibility=UMLVisability.PRIVATE)
+        expected_2 = UMLOperation(name="name", visibility=UMLVisibility.PRIVATE)
         uml_line_3 = "# name()"
-        expected_3 = UMLOperation(name="name", visibility=UMLVisability.PROTECTED)
+        expected_3 = UMLOperation(name="name", visibility=UMLVisibility.PROTECTED)
         uml_line_4 = "~ name()"
-        expected_4 = UMLOperation(name="name", visibility=UMLVisability.PACKAGE)
+        expected_4 = UMLOperation(name="name", visibility=UMLVisibility.PACKAGE)
 
         result = UMLParser.parse_operation(uml_line_1)
         self.assertEqual(result, expected_1)
@@ -165,7 +165,7 @@ class TestUMLParser(unittest.TestCase):
 
     def test_parse_operations_valid_with_all(self):
         uml_line = "-name(param1: String, param2) : float"
-        expected = UMLOperation(name="name", params={"param1": UMLDataType.STR, "param2": UMLDataType.UNKNOWN}, return_types=[UMLDataType.FLOAT], visibility=UMLVisability.PRIVATE)
+        expected = UMLOperation(name="name", params={"param1": UMLDataType.STR, "param2": UMLDataType.UNKNOWN}, return_types=[UMLDataType.FLOAT], visibility=UMLVisibility.PRIVATE)
         result = UMLParser.parse_operation(uml_line)
         self.assertEqual(result, expected)
 
@@ -262,7 +262,7 @@ class TestUMLParser(unittest.TestCase):
         """
 
         expected = [
-            UMLClass(name="TestClass", attributes=[UMLAttribute(name="attribute", data_type=UMLDataType.STR, visibility=UMLVisability.PUBLIC, initial="\"default\"", derived=True)], operations=[UMLOperation(name="method", return_types=[UMLDataType.INT], visibility=UMLVisability.PRIVATE, params={"p1": UMLDataType.STR, "p2": UMLDataType.UNKNOWN})])
+            UMLClass(name="TestClass", attributes=[UMLAttribute(name="attribute", data_type=UMLDataType.STR, visibility=UMLVisibility.PUBLIC, initial="\"default\"", derived=True)], operations=[UMLOperation(name="method", return_types=[UMLDataType.INT], visibility=UMLVisibility.PRIVATE, params={"p1": UMLDataType.STR, "p2": UMLDataType.UNKNOWN})])
         ]
         
 
@@ -293,8 +293,8 @@ class TestUMLParser(unittest.TestCase):
         """
 
         expected = [
-            UMLClass(name="TestClass1", attributes=[UMLAttribute(name="attribute1", data_type=UMLDataType.STR, visibility=UMLVisability.PUBLIC)], operations=[UMLOperation(name="method1", return_types=[UMLDataType.INT], visibility=UMLVisability.PRIVATE)]),
-            UMLClass(name="TestClass2", attributes=[UMLAttribute(name="attribute2", data_type=UMLDataType.INT, visibility=UMLVisability.PUBLIC)], operations=[UMLOperation(name="method2", return_types=[UMLDataType.VOID], visibility=UMLVisability.PRIVATE, params={"p1": UMLDataType.STR})]),
+            UMLClass(name="TestClass1", attributes=[UMLAttribute(name="attribute1", data_type=UMLDataType.STR, visibility=UMLVisibility.PUBLIC)], operations=[UMLOperation(name="method1", return_types=[UMLDataType.INT], visibility=UMLVisibility.PRIVATE)]),
+            UMLClass(name="TestClass2", attributes=[UMLAttribute(name="attribute2", data_type=UMLDataType.INT, visibility=UMLVisibility.PUBLIC)], operations=[UMLOperation(name="method2", return_types=[UMLDataType.VOID], visibility=UMLVisibility.PRIVATE, params={"p1": UMLDataType.STR})]),
             UMLClass(name="TestClass3")
         ]
 

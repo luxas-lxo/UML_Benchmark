@@ -1,7 +1,7 @@
 from plantuml_eval.eval_classes import ClassComperator
 from plantuml_eval.eval_helper_functions import EvalHelper
 from UML_model.uml_model import UMLModel
-from UML_model.uml_class import UMLClass, UMLAttribute, UMLDataType, UMLVisability
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLDataType, UMLVisibility
 from grading.grade_metamodel import GradeModel
 import unittest
 from typing import Dict

@@ -1,4 +1,4 @@
-from UML_model.uml_class import UMLAttribute, UMLDataType, UMLVisability, UMLOperation, UMLClass
+from UML_model.uml_class import UMLAttribute, UMLDataType, UMLVisibility, UMLOperation, UMLClass
 from UML_model.uml_element import UMLElement
 from UML_model.uml_relation import UMLRelation, UMLRelationType
 from grading.grade_reference import GradeReference
@@ -35,18 +35,18 @@ class TestUMLDataType(unittest.TestCase):
 class TestUMLVisability(unittest.TestCase):
     def test_visability_enum(self):
         # Test the visability enum values
-        self.assertEqual(UMLVisability.PUBLIC.value, "+")
-        self.assertEqual(UMLVisability.PRIVATE.value, "-")
-        self.assertEqual(UMLVisability.PROTECTED.value, "#")
-        self.assertEqual(UMLVisability.PACKAGE.value, "~")
-        self.assertEqual(UMLVisability.UNKNOWN.value, "")
+        self.assertEqual(UMLVisibility.PUBLIC.value, "+")
+        self.assertEqual(UMLVisibility.PRIVATE.value, "-")
+        self.assertEqual(UMLVisibility.PROTECTED.value, "#")
+        self.assertEqual(UMLVisibility.PACKAGE.value, "~")
+        self.assertEqual(UMLVisibility.UNKNOWN.value, "")
 
 class TestUMLAttribute(unittest.TestCase):
     def setUp(self):
         self.empty_attribute = UMLAttribute(name="testAttributeEmpty")
-        self.full_attribute = UMLAttribute(name="testAttributeFull", data_type=UMLDataType.STR, initial="default", visibility=UMLVisability.PUBLIC, derived=False)
-        self.derived_attribute = UMLAttribute(name="testAttributeDerived", data_type=UMLDataType.STR, initial="default", visibility=UMLVisability.PUBLIC, derived=True)
-        self.no_initial_attribute = UMLAttribute(name="testAttributeNoInitial", data_type=UMLDataType.STR, visibility=UMLVisability.PUBLIC, derived=False)
+        self.full_attribute = UMLAttribute(name="testAttributeFull", data_type=UMLDataType.STR, initial="default", visibility=UMLVisibility.PUBLIC, derived=False)
+        self.derived_attribute = UMLAttribute(name="testAttributeDerived", data_type=UMLDataType.STR, initial="default", visibility=UMLVisibility.PUBLIC, derived=True)
+        self.no_initial_attribute = UMLAttribute(name="testAttributeNoInitial", data_type=UMLDataType.STR, visibility=UMLVisibility.PUBLIC, derived=False)
         self.no_visibility_attribute = UMLAttribute(name="testAttributeNoVisibility", data_type=UMLDataType.STR, initial="default", derived=False)
 
     def test_uml_attribute_initialization_empty(self):
@@ -56,7 +56,7 @@ class TestUMLAttribute(unittest.TestCase):
         self.assertEqual(uml_attribute.name, "testAttribute")
         self.assertEqual(uml_attribute.data_type, UMLDataType.UNKNOWN)
         self.assertEqual(uml_attribute.initial, "")
-        self.assertEqual(uml_attribute.visibility, UMLVisability.UNKNOWN)
+        self.assertEqual(uml_attribute.visibility, UMLVisibility.UNKNOWN)
         self.assertFalse(uml_attribute.derived)
         self.assertIsNone(uml_attribute.reference)
 
@@ -66,14 +66,14 @@ class TestUMLAttribute(unittest.TestCase):
             name="testAttribute",
             data_type=UMLDataType.INT,
             initial="0",
-            visibility=UMLVisability.PRIVATE,
+            visibility=UMLVisibility.PRIVATE,
             derived=True
         )
 
         self.assertEqual(uml_attribute.name, "testAttribute")
         self.assertEqual(uml_attribute.data_type, UMLDataType.INT)
         self.assertEqual(uml_attribute.initial, "0")
-        self.assertEqual(uml_attribute.visibility, UMLVisability.PRIVATE)
+        self.assertEqual(uml_attribute.visibility, UMLVisibility.PRIVATE)
         self.assertTrue(uml_attribute.derived)
         self.assertIsNone(uml_attribute.reference)
 
@@ -155,9 +155,9 @@ class TestUMLAttribute(unittest.TestCase):
 class UMLOperationTest(unittest.TestCase):
     def setUp(self):
         self.empty_operation = UMLOperation(name="testOperationEmpty")
-        self.full_operation = UMLOperation(name="testOperationFull", params={"param1": UMLDataType.INT, "param2": UMLDataType.UNKNOWN}, return_types=[UMLDataType.FLOAT], visibility=UMLVisability.PUBLIC)
-        self.no_params_operation = UMLOperation(name="testOperationNoParams", return_types=[UMLDataType.VOID], visibility=UMLVisability.PRIVATE)
-        self.no_return_operation = UMLOperation(name="testOperationNoReturn", params={"param1": UMLDataType.INT}, visibility=UMLVisability.PROTECTED)
+        self.full_operation = UMLOperation(name="testOperationFull", params={"param1": UMLDataType.INT, "param2": UMLDataType.UNKNOWN}, return_types=[UMLDataType.FLOAT], visibility=UMLVisibility.PUBLIC)
+        self.no_params_operation = UMLOperation(name="testOperationNoParams", return_types=[UMLDataType.VOID], visibility=UMLVisibility.PRIVATE)
+        self.no_return_operation = UMLOperation(name="testOperationNoReturn", params={"param1": UMLDataType.INT}, visibility=UMLVisibility.PROTECTED)
         self.no_visibility_operation = UMLOperation(name="testOperationNoVisibility", params={"param1": UMLDataType.INT}, return_types=[UMLDataType.VOID])
 
     def test_uml_operation_initialization_empty(self):
@@ -167,7 +167,7 @@ class UMLOperationTest(unittest.TestCase):
         self.assertEqual(uml_operation.name, "testOperation")
         self.assertEqual(uml_operation.return_types, [UMLDataType.VOID])
         self.assertEqual(uml_operation.params, {})
-        self.assertEqual(uml_operation.visibility, UMLVisability.UNKNOWN)
+        self.assertEqual(uml_operation.visibility, UMLVisibility.UNKNOWN)
         self.assertIsNone(uml_operation.reference)
 
     def test_uml_operation_initialization_full(self):
@@ -176,13 +176,13 @@ class UMLOperationTest(unittest.TestCase):
             name="testOperation",
             params={"param1": UMLDataType.INT, "param2": UMLDataType.STR},
             return_types=[UMLDataType.FLOAT],
-            visibility=UMLVisability.PUBLIC
+            visibility=UMLVisibility.PUBLIC
         )
 
         self.assertEqual(uml_operation.name, "testOperation")
         self.assertEqual(uml_operation.params, {"param1": UMLDataType.INT, "param2": UMLDataType.STR})
         self.assertEqual(uml_operation.return_types, [UMLDataType.FLOAT])
-        self.assertEqual(uml_operation.visibility, UMLVisability.PUBLIC)
+        self.assertEqual(uml_operation.visibility, UMLVisibility.PUBLIC)
         self.assertIsNone(uml_operation.reference)
 
     def test_uml_operation_repr(self):
@@ -254,12 +254,12 @@ class TestUMLClass(unittest.TestCase):
     def setUp(self):
         # attributes and operations for testing
         self.attr1 = UMLAttribute(name="attr1", data_type=UMLDataType.INT)
-        self.attr1_full = UMLAttribute(name="attr1", data_type=UMLDataType.INT, initial="0", visibility=UMLVisability.PUBLIC, derived=True)
+        self.attr1_full = UMLAttribute(name="attr1", data_type=UMLDataType.INT, initial="0", visibility=UMLVisibility.PUBLIC, derived=True)
         self.attr2_with_dt = UMLAttribute(name="attr2", data_type=UMLDataType.STR)
 
         self.op1 = UMLOperation(name="op1")
         self.op1_with_param = UMLOperation(name="op1", params={"param1": UMLDataType.STR})
-        self.op1_full = UMLOperation(name="op1", params={"param1": UMLDataType.STR}, return_types=[UMLDataType.INT], visibility=UMLVisability.PUBLIC)
+        self.op1_full = UMLOperation(name="op1", params={"param1": UMLDataType.STR}, return_types=[UMLDataType.INT], visibility=UMLVisibility.PUBLIC)
         self.op2 = UMLOperation(name="op2", params={"param2": UMLDataType.STR})
 
         # initialize UMLClass instances for testing
@@ -283,8 +283,8 @@ class TestUMLClass(unittest.TestCase):
         # Test initialization with all attributes
         uml_class = UMLClass(
             name="TestClass",
-            attributes=[UMLAttribute(name="attr1", data_type=UMLDataType.INT, initial="0", visibility=UMLVisability.PUBLIC, derived=True)],
-            operations=[UMLOperation(name="op1", params={"param1": UMLDataType.STR}, return_types=[UMLDataType.INT], visibility=UMLVisability.PUBLIC)]
+            attributes=[UMLAttribute(name="attr1", data_type=UMLDataType.INT, initial="0", visibility=UMLVisibility.PUBLIC, derived=True)],
+            operations=[UMLOperation(name="op1", params={"param1": UMLDataType.STR}, return_types=[UMLDataType.INT], visibility=UMLVisibility.PUBLIC)]
         )
 
         self.assertEqual(uml_class.name, "TestClass")
@@ -297,7 +297,7 @@ class TestUMLClass(unittest.TestCase):
         self.assertEqual(uml_class.attributes[0].name, "attr1")
         self.assertEqual(uml_class.attributes[0].data_type, UMLDataType.INT)
         self.assertEqual(uml_class.attributes[0].initial, "0")
-        self.assertEqual(uml_class.attributes[0].visibility, UMLVisability.PUBLIC)
+        self.assertEqual(uml_class.attributes[0].visibility, UMLVisibility.PUBLIC)
         self.assertTrue(uml_class.attributes[0].derived)
         # important: the reference is set to the class itself
         self.assertEqual(uml_class.attributes[0].reference, uml_class)
@@ -305,7 +305,7 @@ class TestUMLClass(unittest.TestCase):
         self.assertEqual(uml_class.operations[0].name, "op1")
         self.assertEqual(uml_class.operations[0].params, {"param1": UMLDataType.STR})
         self.assertEqual(uml_class.operations[0].return_types, [UMLDataType.INT])
-        self.assertEqual(uml_class.operations[0].visibility, UMLVisability.PUBLIC)
+        self.assertEqual(uml_class.operations[0].visibility, UMLVisibility.PUBLIC)
         # important: the reference is set to the class itself
         self.assertEqual(uml_class.operations[0].reference, uml_class)
 

@@ -1,5 +1,5 @@
-from UML_model.uml_class import UMLClass
-from UML_model.uml_enum import UMLEnum
+from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
+from UML_model.uml_enum import UMLEnum, UMLValue
 from UML_model.uml_relation import UMLRelation
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
@@ -20,6 +20,17 @@ class UMLModel:
             self.class_list: List[UMLClass] = class_list or []
             self.enum_list: List[UMLEnum] = enum_list or []
             self.relation_list: List[UMLRelation] = relation_list or []
+        
+        self.attribute_list: List[UMLAttribute] = []
+        self.operation_list: List[UMLOperation] = []
+        for cls in self.class_list:
+            self.attribute_list.extend(cls.attributes)
+            self.operation_list.extend(cls.operations)
+
+        self.value_list: List[UMLValue] = []
+        for enm in self.enum_list:
+            self.value_list.extend(enm.values)
+                
 
         self.class_lookup: Dict[str, UMLClass] = {cls.name.lower().strip(): cls for cls in self.class_list}
         self.enum_lookup: Dict[str, UMLEnum] = {enu.name.lower().strip(): enu for enu in self.enum_list}
