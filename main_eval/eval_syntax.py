@@ -1,10 +1,13 @@
 from plantuml_eval.eval_model import EvalModel
 from main_eval.eval_metrics import ScoringCriteria
-from UML_model.uml_relation import UMLRelationType
+from UML_model.uml_relation import UMLRelationType, UMLRelation
 from UML_model.uml_class import UMLDataType, UMLVisibility
 from tools.syntactic_check import SyntacticCheck
 
 from itertools import chain
+from typing import Dict
+
+ERROR_FLAG = "--error--"
 
 class SyntaxEvaluator:
     @staticmethod
@@ -19,7 +22,7 @@ class SyntaxEvaluator:
                 total_score -= SCORE_PUNISHMENT
             if len(cls_i.operations) > len(cls_s.operations):
                 total_score -= SCORE_PUNISHMENT
-            if not SyntacticCheck.is_upper_camel_case(cls_s.name):
+            if not SyntacticCheck.is_upper_camel_case(cls_s.name) or cls_s.name == ERROR_FLAG:
                 total_score -= SCORE_PUNISHMENT
         max_score = len(model.class_match_map)
         class_syntax_score = total_score / max_score if max_score > 0 else 1.0
@@ -33,16 +36,14 @@ class SyntaxEvaluator:
         score = all_classes
         seen = set()
         duplicated_class_names = set()
-        SCORE_PUNISHMENT = 1/2
+        SCORE_PUNISHMENT = 1
         for cls_s in model.student_model.class_list:
             name_s = cls_s.name.lower().strip()
             if name_s in seen:
                 duplicated_class_names.add(name_s)
             else:
                 seen.add(name_s)
-            if not SyntacticCheck.is_upper_camel_case(cls_s.name):
-                score -= SCORE_PUNISHMENT
-            if name_s in duplicated_class_names:
+            if not SyntacticCheck.is_upper_camel_case(cls_s.name) or cls_s.name == ERROR_FLAG or name_s in duplicated_class_names:
                 score -= SCORE_PUNISHMENT
         total_score = score / all_classes if all_classes > 0 else 1.0
         criteria.score = total_score
@@ -63,9 +64,9 @@ class SyntaxEvaluator:
                 total_score -= SCORE_PUNISHMENT
             if att_i.visibility not in (UMLVisibility.UNKNOWN, UMLVisibility.ERROR) and att_s.visibility in (UMLVisibility.UNKNOWN, UMLVisibility.ERROR):
                 total_score -= SCORE_PUNISHMENT
-            if att_i.initial not in ("--error--", "") and  att_s.initial in ("--error--", ""):
+            if att_i.initial not in (ERROR_FLAG, "") and  att_s.initial in (ERROR_FLAG, ""):
                 total_score -= SCORE_PUNISHMENT
-            if not SyntacticCheck.is_lower_camel_case(att_s.name):
+            if att_s.name == ERROR_FLAG:
                 total_score -= SCORE_PUNISHMENT
         max_score = len(model.attr_match_map) + len(model.misplaced_attr_map)
         attribute_syntax_score = total_score / max_score if max_score > 0 else 1.0
@@ -78,15 +79,9 @@ class SyntaxEvaluator:
         # this method validates the syntax global in the student model
         all_atts = len(model.student_model.attribute_list)
         score = all_atts
-        SCORE_PUNISHMENT = 1/4
+        SCORE_PUNISHMENT = 1
         for att_s in model.student_model.attribute_list:
-            if att_s.initial == "--error--":
-                score -= SCORE_PUNISHMENT
-            if att_s.visibility == UMLVisibility.ERROR:
-                score -= SCORE_PUNISHMENT
-            if att_s.data_type == UMLDataType.ERROR:
-                score -= SCORE_PUNISHMENT
-            if not SyntacticCheck.is_lower_camel_case(att_s.name):
+            if att_s.initial == ERROR_FLAG or att_s.visibility == UMLVisibility.ERROR or att_s.data_type == UMLDataType.ERROR or att_s.name == ERROR_FLAG:
                 score -= SCORE_PUNISHMENT
         total_score = score / all_atts if all_atts > 0 else 1.0
         criteria.score = total_score
@@ -130,35 +125,56 @@ class SyntaxEvaluator:
         # this method validates the syntax global in the student model
         all_ops = len(model.student_model.operation_list)
         score = all_ops
-        SCORE_PUNISHMENT = 1/4
+        SCORE_PUNISHMENT = 1
         for op_s in model.student_model.operation_list:
-            if op_s.visibility == UMLVisibility.ERROR:
-                score -= SCORE_PUNISHMENT
-            if any(v == UMLDataType.ERROR for v in op_s.params.values()):
-                score -= SCORE_PUNISHMENT
-            if any(t == UMLDataType.ERROR for t in op_s.return_types):
-                score -= SCORE_PUNISHMENT
-            if not SyntacticCheck.is_lower_camel_case(op_s.name):
+            if op_s.visibility == UMLVisibility.ERROR or any(v == UMLDataType.ERROR for v in op_s.params.values()) or any(t == UMLDataType.ERROR for t in op_s.return_types) or op_s.name == ERROR_FLAG:
                 score -= SCORE_PUNISHMENT
         total_score = score / all_ops if all_ops > 0 else 1.0
         criteria.score = total_score
         return criteria
     
     @staticmethod
-    def evaluate_simple_associations(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        pass
+    def evaluate_relation(criteria: ScoringCriteria, model: EvalModel, rel_type: UMLRelationType) -> ScoringCriteria:
+        filtered_rel_map: Dict[UMLRelation, UMLRelation] = {rel_i: rel_s for rel_i, rel_s in model.relation_match_map.items() if rel_i.type == rel_type}
+        total_score = 0
+        SCORE_PUNISHMENT = 1/4
+        for rel_i, rel_s in filtered_rel_map.items():
+            total_score += 1
+            if rel_s.type != rel_type:
+                total_score -= SCORE_PUNISHMENT
+            if (rel_i.description and not rel_s.description) or rel_s.description == ERROR_FLAG:
+                total_score -= SCORE_PUNISHMENT
+            if rel_s.s_multiplicity == ERROR_FLAG:
+                total_score -= SCORE_PUNISHMENT
+            if rel_s.d_multiplicity == ERROR_FLAG:
+                total_score -= SCORE_PUNISHMENT
+        relation_syntax_score = total_score / len(filtered_rel_map) if filtered_rel_map else 1.0
+        criteria.score = relation_syntax_score
+        return criteria
     
     @staticmethod
-    def evaluate_aggregations(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        pass
-    
+    def evaluate_formal_relations(criteria: ScoringCriteria, model: EvalModel, rel_type: UMLRelationType) -> ScoringCriteria:
+        all_filtered_relations = [rel for rel in model.student_model.relation_list if rel.type == rel_type]
+        score = len(all_filtered_relations)
+        SCORE_PUNISHMENT = 1
+        for asso_s in model.student_model.association_list:
+            if asso_s.description == ERROR_FLAG or asso_s.s_multiplicity == ERROR_FLAG or asso_s.d_multiplicity == ERROR_FLAG:
+                score -= SCORE_PUNISHMENT
+        total_score = score / len(all_filtered_relations) if all_filtered_relations else 1.0
+        criteria.score = total_score
+        return criteria
+
     @staticmethod
-    def evaluate_compositions(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        pass
-    
-    @staticmethod
-    def evaluate_generalizations(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        pass
+    def evaluate_all_relations(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        score = len(model.student_model.relation_list)
+        SCORE_PUNISHMENT = 1
+        for rel in model.student_model.relation_list:
+            if rel.type == UMLRelationType.UNKNOWN or rel.description == ERROR_FLAG or rel.s_multiplicity == ERROR_FLAG or rel.d_multiplicity == ERROR_FLAG:
+                score -= SCORE_PUNISHMENT
+        total_score = score / len(model.student_model.relation_list) if model.student_model.relation_list else 1.0
+        criteria.score = total_score
+        return criteria
+
     
     @staticmethod
     def evaluate_multiplicities(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
@@ -167,6 +183,7 @@ class SyntaxEvaluator:
     @staticmethod
     def evaluate_roles(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
         # NOTE: role names are not implemented in the PlantUML parser, so this method is a placeholder.
+        criteria.score = 1.0
         return criteria
     
     @staticmethod
@@ -180,3 +197,64 @@ class SyntaxEvaluator:
     @staticmethod
     def evaluate_enum_values(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
         pass
+
+    @staticmethod
+    def evaluate_global_class_names(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        all_classes = len(model.student_model.class_list)
+        score = all_classes
+        SCORE_PUNISHMENT = 1
+        for cls_s in model.student_model.class_list:
+            if not SyntacticCheck.is_upper_camel_case(cls_s.name):
+                score -= SCORE_PUNISHMENT
+        total_score = score / all_classes if all_classes > 0 else 1.0
+        criteria.score = total_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_global_attribute_names(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        all_atts = len(model.student_model.attribute_list)
+        score = all_atts
+        SCORE_PUNISHMENT = 1
+        for att_s in model.student_model.attribute_list:
+            if not SyntacticCheck.is_lower_camel_case(att_s.name):
+                score -= SCORE_PUNISHMENT
+        total_score = score / all_atts if all_atts > 0 else 1.0
+        criteria.score = total_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_global_operation_names(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        all_ops = len(model.student_model.operation_list)
+        score = all_ops
+        SCORE_PUNISHMENT = 1
+        for op_s in model.student_model.operation_list:
+            if not SyntacticCheck.is_lower_camel_case(op_s.name):
+                score -= SCORE_PUNISHMENT
+        total_score = score / all_ops if all_ops > 0 else 1.0
+        criteria.score = total_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_global_enum_names(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        all_enums = len(model.student_model.enum_list)
+        score = all_enums
+        SCORE_PUNISHMENT = 1
+        for enum_s in model.student_model.enum_list:
+            if not SyntacticCheck.is_upper_camel_case(enum_s.name):
+                score -= SCORE_PUNISHMENT
+        total_score = score / all_enums if all_enums > 0 else 1.0
+        criteria.score = total_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_global_enum_values(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        all_enum_values = sum(len(enum.values) for enum in model.student_model.enum_list)
+        score = all_enum_values
+        SCORE_PUNISHMENT = 1
+        for enum in model.student_model.enum_list:
+            for value in enum.values:
+                if not SyntacticCheck.is_all_upper_case(value.name):
+                    score -= SCORE_PUNISHMENT
+        total_score = score / all_enum_values if all_enum_values > 0 else 1.0
+        criteria.score = total_score
+        return criteria

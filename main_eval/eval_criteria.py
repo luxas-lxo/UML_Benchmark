@@ -1,6 +1,7 @@
 from plantuml_eval.eval_model import EvalModel
 from main_eval.eval_metrics import ScoringCriteria, ScoringScheme
 from main_eval.eval_completeness import CompletenessEvaluator
+from UML_model.uml_relation import UMLRelationType
 from main_eval.eval_syntax import SyntaxEvaluator
 
 from typing import List
@@ -98,13 +99,15 @@ class EvalHandler:
         elif criteria.id == "SYC3":
             return SyntaxEvaluator.evaluate_operations(criteria, model)
         elif criteria.id == "SYC4":
-            return SyntaxEvaluator.evaluate_simple_associations(criteria, model)
+            return SyntaxEvaluator.evaluate_relation(criteria, model, UMLRelationType.ASSOCIATION)
         elif criteria.id == "SYC5":
-            return SyntaxEvaluator.evaluate_aggregations(criteria, model)
+            return SyntaxEvaluator.evaluate_relation(criteria, model, UMLRelationType.AGGREGATION)
         elif criteria.id == "SYC6":
-            return SyntaxEvaluator.evaluate_compositions(criteria, model)
+            return SyntaxEvaluator.evaluate_relation(criteria, model, UMLRelationType.COMPOSITION)
         elif criteria.id == "SYC7":
-            return SyntaxEvaluator.evaluate_generalizations(criteria, model)
+            # NOTE: generalisations are not implemented yet
+            criteria.score = 1.0
+            return criteria
         elif criteria.id == "SYC8":
             return SyntaxEvaluator.evaluate_multiplicities(criteria, model)
         elif criteria.id == "SYC9":
@@ -127,13 +130,15 @@ class EvalHandler:
         elif criteria.id == "SYC3.global":
             return SyntaxEvaluator.evaluate_formal_operations(criteria, model)
         elif criteria.id == "SYC4.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_relations(criteria, model, UMLRelationType.ASSOCIATION)
         elif criteria.id == "SYC5.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_relations(criteria, model, UMLRelationType.AGGREGATION)
         elif criteria.id == "SYC6.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_relations(criteria, model, UMLRelationType.COMPOSITION)
         elif criteria.id == "SYC7.global":
-            pass
+            # NOTE: generalisations are not implemented yet
+            criteria.score = 1.0
+            return criteria
         elif criteria.id == "SYC8.global":
             pass
         elif criteria.id == "SYC9.global":
@@ -144,6 +149,18 @@ class EvalHandler:
             pass
         elif criteria.id == "SYC12.global":
             pass
+        elif criteria.id == "SYC20.global":
+            return SyntaxEvaluator.evaluate_global_class_names(criteria, model)
+        elif criteria.id == "SYC21.global":
+            return SyntaxEvaluator.evaluate_global_attribute_names(criteria, model)
+        elif criteria.id == "SYC22.global":
+            return SyntaxEvaluator.evaluate_global_operation_names(criteria, model)
+        elif criteria.id == "SYC23.global":
+            return SyntaxEvaluator.evaluate_global_enum_names(criteria, model)
+        elif criteria.id == "SYC24.global":
+            return SyntaxEvaluator.evaluate_global_enum_values(criteria, model)
+        elif criteria.id == "SYC25.global":
+            return SyntaxEvaluator.evaluate_all_relations(criteria, model)
         else:
             raise ValueError(f"Unknown syntactic correctness criteria id: {criteria.id}")
     

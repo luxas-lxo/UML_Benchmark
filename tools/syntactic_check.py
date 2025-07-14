@@ -37,3 +37,19 @@ class SyntacticCheck:
     def is_lower_camel_case(word: str) -> bool:
         # lowerCamelCase: Starts with lowercase, no underscores, each new word starts with uppercase
         return bool(re.fullmatch(r'[a-z]+(?:[A-Z][a-z0-9]*)*', word))
+    
+    @staticmethod
+    def is_all_upper_case(word: str) -> bool:
+        # ALL_UPPER_CASE: All uppercase letters, can include underscores
+        return bool(re.fullmatch(r'[A-Z_]+', word))
+    
+    @staticmethod
+    def is_all_lower_case(word: str) -> bool:
+        # all_lower_case: All lowercase letters, can include underscores
+        return bool(re.fullmatch(r'[a-z_]+', word))
+    
+    @staticmethod
+    def is_valid_multiplicity(multiplicity: str) -> bool:
+        # Valid multiplicities: 0..1, 1, 0..*, *, 1..*, 1..n, n..m, etc.
+        valid_pattern = re.compile(r'^(?:\d+|\*|\d+\.\.\d+|\d+\.\.\*)$')
+        return bool(valid_pattern.match(multiplicity.strip()))

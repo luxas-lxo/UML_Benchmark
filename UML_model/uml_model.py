@@ -1,6 +1,6 @@
 from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
 from UML_model.uml_enum import UMLEnum, UMLValue
-from UML_model.uml_relation import UMLRelation
+from UML_model.uml_relation import UMLRelation, UMLRelationType
 from UML_model.uml_element import UMLElement
 from tools.UML_parser import UMLParser
 
@@ -30,6 +30,11 @@ class UMLModel:
         self.value_list: List[UMLValue] = []
         for enm in self.enum_list:
             self.value_list.extend(enm.values)
+
+        self.association_list: List[UMLRelation] = [rel for rel in self.relation_list if rel.type == UMLRelationType.ASSOCIATION]
+        self.aggregation_list: List[UMLRelation] = [rel for rel in self.relation_list if rel.type == UMLRelationType.AGGREGATION]
+        self.composition_list: List[UMLRelation] = [rel for rel in self.relation_list if rel.type == UMLRelationType.COMPOSITION]
+        self.association_link_list: List[UMLRelation] = [rel for rel in self.relation_list if rel.type == UMLRelationType.ASSOCIATION_LINK]
                 
 
         self.class_lookup: Dict[str, UMLClass] = {cls.name.lower().strip(): cls for cls in self.class_list}

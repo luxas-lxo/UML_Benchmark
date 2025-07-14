@@ -55,8 +55,14 @@ class ScoringScheme:
         syc11g = ScoringCriteria(SYNTAX, "SYC11.global", "Enumeration values are formally correct")
         syc12 = ScoringCriteria(SYNTAX, "SYC12", "Enumeration values are correctly represented")
         syc12g = ScoringCriteria(SYNTAX, "SYC12.global", "Enumeration values are formally correct")
+        syc20g = ScoringCriteria(SYNTAX, "SYC20.global", "All classes are in UpperCamelCase")
+        syc21g = ScoringCriteria(SYNTAX, "SYC21.global", "All attributes are in lowerCamelCase")
+        syc22g = ScoringCriteria(SYNTAX, "SYC22.global", "All operations are in lowerCamelCase")
+        syc23g = ScoringCriteria(SYNTAX, "SYC23.global", "All enumeration names are in UpperCamelCase")
+        syc24g = ScoringCriteria(SYNTAX, "SYC24.global", "All enumeration values are in ALL_UPPER_CASE")
+        syc25g = ScoringCriteria(SYNTAX, "SYC25.global", "All relations are formally correct")
 
-        self.syntax_criteria = [syc1, syc2, syc3, syc4, syc5, syc6, syc7, syc8, syc9, syc10, syc11, syc12, syc1g, syc2g, syc3g, syc4g, syc5g, syc6g, syc7g, syc8g, syc9g, syc10g, syc11g, syc12g]
+        self.syntax_criteria = [syc1, syc2, syc3, syc4, syc5, syc6, syc7, syc8, syc9, syc10, syc11, syc12, syc1g, syc2g, syc3g, syc4g, syc5g, syc6g, syc7g, syc8g, syc9g, syc10g, syc11g, syc12g, syc20g, syc21g, syc22g, syc23g, syc24g, syc25g]
 
         sec1 = ScoringCriteria(SEMANTICS, "SEC1", "Class names are appropriate")
         sec2 = ScoringCriteria(SEMANTICS, "SEC2", "Attribute names are appropriate")

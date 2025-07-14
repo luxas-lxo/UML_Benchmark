@@ -9,9 +9,11 @@ class TestUMLParser(unittest.TestCase):
         uml_line_1 = ""
         uml_line_2 = "   "
         uml_line_3 = "na me: Str"
+        uml_line_4 = " : String"
         self.assertIsNone(UMLParser.parse_attribute(uml_line_1))
         self.assertIsNone(UMLParser.parse_attribute(uml_line_2))
         self.assertIsNone(UMLParser.parse_attribute(uml_line_3))
+        self.assertEqual(UMLParser.parse_attribute(uml_line_4), UMLAttribute(name="--error--", data_type=UMLDataType.STR))
 
     def test_parse_attributes_valid_basic(self):
         uml_line = "name"
