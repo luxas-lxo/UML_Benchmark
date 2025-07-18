@@ -280,8 +280,8 @@ class GradeModel:
                     # name match -> 1/2 points
                     temp_grade += st_feature.points / 2
             elif st_feature.type == FeatureType.VALUE:
-                if st_feature.reference.name == stud_enum.name or SyntacticCheck.syntactic_match(stud_enum.name, st_feature.reference.name)[0] or SemanticCheck.semantic_match(stud_enum.name, st_feature.reference.name)[0]:
-                    # name match -> 1/2 points
+                if any(v == st_feature.reference.name for v in stud_enum.values) or any(SyntacticCheck.syntactic_match(v.name, st_feature.reference.name)[0] for v in stud_enum.values) or any(SemanticCheck.semantic_match(v.name, st_feature.reference.name)[0] for v in stud_enum.values):
+                    # name match -> points
                     temp_grade += st_feature.points 
         return temp_grade / grade_enum.points if grade_enum.points > 0 else 0.0, temp_grade
 
@@ -298,3 +298,21 @@ class GradeModel:
                 # relation structure match -> points
                 temp_grade += GradeModel.grade_relation(st_feature, stud_relation, element_match_map)
         return temp_grade / grade_relation.points if grade_relation.points > 0 else 0.0, temp_grade
+    
+    def temp_grade_value(self, stud_value: UMLValue, mapped_inst_value: UMLValue) -> Tuple[float, float]:
+        temp_grade: float = 0.0
+        grade_enum: GradeObject = next((enm for enm in self.enums if enm.element == mapped_inst_value.reference), None)
+        if not grade_enum:
+            raise ValueError(f"Enum '{mapped_inst_value.reference.name}' not found in model.")
+        for st_feature in grade_enum.st_features:
+            if st_feature.type == FeatureType.VALUE and st_feature.reference == mapped_inst_value:
+                # NOTE: here only the name can be checked, as the value itself is not a complex object
+                # so we decided to give syntactic matches more weight than semantic matches
+                syn_res = SyntacticCheck.syntactic_match(stud_value.name, st_feature.reference.name)
+                sem_res = SemanticCheck.semantic_match(stud_value.name, st_feature.reference.name)
+                if syn_res[0]:
+                    temp_grade += st_feature.points * syn_res[1] * 3/5
+                if sem_res[0]:
+                    temp_grade += st_feature.points * sem_res[1] * 2/5
+                break
+        return temp_grade / st_feature.points if grade_enum.points > 0 else 0.0, temp_grade

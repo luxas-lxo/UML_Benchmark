@@ -76,6 +76,12 @@ class EvalModel:
         self.missing_enums_str: List[str] = [str(enum) for enum in self.missing_enums]
         self.possible_misplaced_values: Dict[UMLValue, Union[UMLAttribute, UMLClass]] = compare_enums[2]
         self.possible_misplaced_values_str: Dict[str, str] = {str(k): str(v) for k, v in self.possible_misplaced_values.items()}
+        self.value_match_map: Dict[UMLValue, UMLValue] = compare_enums[3]
+        self.value_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.value_match_map.items()}
+        self.misplaced_value_map: Dict[UMLValue, UMLValue] = compare_enums[4]
+        self.misplaced_value_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_value_map.items()}
+        self.missed_value_list: List[UMLValue] = compare_enums[5]
+        self.missed_value_list_str: List[str] = [f"{str(value)} in {str(value.reference)}" for value in self.missed_value_list]
 
         # Algorithm 5: Compare association in InstructorModel and StudentModel
         compare_relations = RelationComperator.compare_relations(self.instructor_model, self.student_model, self.class_match_map, self.missing_classes, self.enum_match_map, self.missing_enums)
@@ -214,7 +220,13 @@ class EvalModel:
         output.append(f"\t{self.enum_match_map_str}")
         output.append("\tMissing Enums:")
         output.append(f"\t{self.missing_enums_str}")
-        output.append("\tPossible Misplaced Values:")
+        output.append("\tValue Matches:")
+        output.append(f"\t{self.value_match_map_str}")
+        output.append("\tMisplaced Values:")
+        output.append(f"\t{self.misplaced_value_map_str}")
+        output.append("\tMissed Values:")
+        output.append(f"\t{self.missed_value_list_str}")
+        output.append("\tPossible Misplaced Values in classes:")
         output.append(f"\t{self.possible_misplaced_values_str}")
 
         output.append("\nAlgorithm 5: Compare Relations")

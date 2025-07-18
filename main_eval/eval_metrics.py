@@ -17,6 +17,9 @@ class ScoringScheme:
     def __init__(self):
         COMPLETENESS = "Completeness"
         SYNTAX = "Syntactic Correctness"
+        SYNTAX_GLOBAL = "Syntactic Correctness Global"
+        SYNTAX_NAMING = "Syntactic Naming Conventions"
+        SYNTAX_NAMING_GLOBAL = "Syntactic Naming Conventions Global"
         SEMANTICS = "Semantic Correctness"
 
         cpt1 = ScoringCriteria(COMPLETENESS, "CPT1", "All necessary classes are included")
@@ -25,11 +28,12 @@ class ScoringScheme:
         cpt4 = ScoringCriteria(COMPLETENESS, "CPT4", "All necessary relations are included")
         cpt5 = ScoringCriteria(COMPLETENESS, "CPT5", "Multiplicities are included in relations")
         cpt6 = ScoringCriteria(COMPLETENESS, "CPT6", "Relations names are included")
-        cpt7 = ScoringCriteria(COMPLETENESS, "CPT7", "Role names are included")
+        # NOTE: role names are not implemented yet
+        #cpt7 = ScoringCriteria(COMPLETENESS, "CPT7", "Role names are included")
         cpt8 = ScoringCriteria(COMPLETENESS, "CPT8", "All necessary enumerations are included")
         cpt9 = ScoringCriteria(COMPLETENESS, "CPT9", "Enumerations include all necessary values")
 
-        self.completeness_criteria = [cpt1, cpt2, cpt3, cpt4, cpt5, cpt6, cpt7, cpt8, cpt9]
+        self.completeness_criteria = [cpt1, cpt2, cpt3, cpt4, cpt5, cpt6, cpt8, cpt9]
 
         syc1 = ScoringCriteria(SYNTAX, "SYC1", "Classes are correctly represented")
         syc1g = ScoringCriteria(SYNTAX, "SYC1.global", "Classes are formally correct")
@@ -49,8 +53,8 @@ class ScoringScheme:
         syc8g = ScoringCriteria(SYNTAX, "SYC8.global", "Relation multiplicities are formally correct")
         syc9 = ScoringCriteria(SYNTAX, "SYC9", "Roles are correctly represented")
         syc9g = ScoringCriteria(SYNTAX, "SYC9.global", "Roles are formally correct")
-        syc10 = ScoringCriteria(SYNTAX, "SYC10", "Aggregation class relations are correctly represented")
-        syc10g = ScoringCriteria(SYNTAX, "SYC10.global", "Aggregation class relations are formally correct")
+        syc10 = ScoringCriteria(SYNTAX, "SYC10", "Association class relations are correctly represented")
+        syc10g = ScoringCriteria(SYNTAX, "SYC10.global", "Association class relations are formally correct")
         syc11 = ScoringCriteria(SYNTAX, "SYC11", "Enumerations are correctly represented")
         syc11g = ScoringCriteria(SYNTAX, "SYC11.global", "Enumeration values are formally correct")
         syc12 = ScoringCriteria(SYNTAX, "SYC12", "Enumeration values are correctly represented")
@@ -65,16 +69,19 @@ class ScoringScheme:
         self.syntax_criteria = [syc1, syc2, syc3, syc4, syc5, syc6, syc7, syc8, syc9, syc10, syc11, syc12, syc1g, syc2g, syc3g, syc4g, syc5g, syc6g, syc7g, syc8g, syc9g, syc10g, syc11g, syc12g, syc20g, syc21g, syc22g, syc23g, syc24g, syc25g]
 
         sec1 = ScoringCriteria(SEMANTICS, "SEC1", "Class names are appropriate")
-        sec2 = ScoringCriteria(SEMANTICS, "SEC2", "Attribute names are appropriate")
-        sec3 = ScoringCriteria(SEMANTICS, "SEC3", "Operation names are appropriate")
-        sec4 = ScoringCriteria(SEMANTICS, "SEC4", "Relation names are appropriate")
+        sec2 = ScoringCriteria(SEMANTICS, "SEC2", "Attribute content is appropriate")
+        sec3 = ScoringCriteria(SEMANTICS, "SEC3", "Operation content is appropriate")
+        sec4 = ScoringCriteria(SEMANTICS, "SEC4", "Relation content is appropriate")
         sec5 = ScoringCriteria(SEMANTICS, "SEC5", "Multiplicities are correct")
         sec6 = ScoringCriteria(SEMANTICS, "SEC6", "Role names are appropriate")
-        sec7 = ScoringCriteria(SEMANTICS, "SEC7", "There are no redundant classes")
-        sec8 = ScoringCriteria(SEMANTICS, "SEC8", "There are no redundant attributes")
-        sec9 = ScoringCriteria(SEMANTICS, "SEC9", "There are no redundant operations")
-        sec10 = ScoringCriteria(SEMANTICS, "SEC10", "There are no redundant relations")  
+        sec7 = ScoringCriteria(SEMANTICS, "SEC7", "Relation names are appropriate")
 
-        self.semantics_criteria = [sec1, sec2, sec3, sec4, sec5, sec6, sec7, sec8, sec9, sec10]
+        # NOTE: the following criteria are not implemented yet,as tests for redundancy are not yet implemented
+        #sec8 = ScoringCriteria(SEMANTICS, "SEC8", "There are no redundant classes")
+        #sec9 = ScoringCriteria(SEMANTICS, "SEC9", "There are no redundant attributes")
+        #sec10 = ScoringCriteria(SEMANTICS, "SEC10", "There are no redundant operations")
+        #sec11 = ScoringCriteria(SEMANTICS, "SEC11", "There are no redundant relations")  
+
+        self.semantics_criteria = [sec1, sec2, sec3, sec4, sec5, sec6, sec7]
         self.criteria = self.completeness_criteria + self.syntax_criteria + self.semantics_criteria
 

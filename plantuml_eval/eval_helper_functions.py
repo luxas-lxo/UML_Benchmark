@@ -81,6 +81,9 @@ class EvalHelper:
                     else:
                         score = grade_model.temp_grade_relation(match, elem, element_match_map)[0]
                         logger.debug(f"Grading relation {elem.name} against {match.name}: score = {score}")
+                elif isinstance(elem, UMLValue):
+                    score = grade_model.temp_grade_value(match, elem)[0]
+                    logger.debug(f"Grading value {elem.name} against {match.name}: score = {score}")
                 else:
                     logger.warning(f"Unknown element type {type(elem)} for grading, using default score of 0.0")
                     score = 0.0
@@ -113,9 +116,8 @@ class EvalHelper:
             filtered_possible_matches = {
                 cls: matches for cls, matches in possible_matches.items() if cls not in safe_matches and matches
             }
-        # find best matches among the remaining possible matches
-        if filtered_possible_matches:
             logger.debug(f"filtered possible matches: { {str(k): [str(v) for v in vs] for k, vs in filtered_possible_matches.items()} }")
+            # find best matches among the remaining possible matches
             best_match_map = EvalHelper.find_best_match_assignment(filtered_possible_matches, grade_model, element_match_map)
 
         return safe_matches, best_match_map

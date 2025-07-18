@@ -29,11 +29,11 @@ class EvalHandler:
     def __repr__(self):
         output = ["EvalHandler Summary:"]
         output.append(f"Total Criteria: {len(self.all_criteria)}")
-        output.append(f"Completeness Criteria: {len(self.cpt_criteria)} criteria")
+        output.append(f"\nCompleteness Criteria: {len(self.cpt_criteria)} criteria")
         output.append("\t"+"\n\t".join([repr(c) for c in self.cpt_criteria]))
-        output.append(f"Syntactic Correctness Criteria: {len(self.syc_criteria)} criteria")
+        output.append(f"\nSyntactic Correctness Criteria: {len(self.syc_criteria)} criteria")
         output.append("\t"+"\n\t".join([repr(c) for c in self.syc_criteria]))
-        output.append(f"Semantic Correctness Criteria: {len(self.sec_criteria)} criteria")
+        output.append(f"\nSemantic Correctness Criteria: {len(self.sec_criteria)} criteria")
         output.append("\t"+"\n\t".join([repr(c) for c in self.sec_criteria]))
         return "\n".join(output)
     
@@ -140,15 +140,15 @@ class EvalHandler:
             criteria.score = 1.0
             return criteria
         elif criteria.id == "SYC8.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_multiplicities(criteria, model)
         elif criteria.id == "SYC9.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_roles(criteria, model)
         elif criteria.id == "SYC10.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_association_classes(criteria, model)
         elif criteria.id == "SYC11.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_enumerations(criteria, model)
         elif criteria.id == "SYC12.global":
-            pass
+            return SyntaxEvaluator.evaluate_formal_enum_values(criteria, model)
         elif criteria.id == "SYC20.global":
             return SyntaxEvaluator.evaluate_global_class_names(criteria, model)
         elif criteria.id == "SYC21.global":

@@ -3,17 +3,39 @@ from grading.grade_reference import GradeReference
 
 from enum import Enum
 from typing import Dict
+import re
 
 class UMLRelationType(Enum):
     ASSOCIATION = "association"
     AGGREGATION = "aggregation"
     COMPOSITION = "composition"
+    GENERALIZATION = "generalization"
     ASSOCIATION_LINK = "association link"
     UNKNOWN = "unknown"
 
+    @staticmethod
+    def from_string(type_str: str) -> 'UMLRelationType':
+        type_str = type_str.lower().strip()
+        association = re.compile(r"-+")
+        aggregation_1 = re.compile(r"-+o")
+        aggregation_2 = re.compile(r"o-+")
+        composition_1 = re.compile(r"-+\*")
+        composition_2 = re.compile(r"\*-+")
+        generalization_1 = re.compile(r"-+\|\>")
+        generalization_2 = re.compile(r"\<\|-+")
+        if association.match(type_str):
+            return UMLRelationType.ASSOCIATION
+        elif aggregation_1.match(type_str) or aggregation_2.match(type_str):
+            return UMLRelationType.AGGREGATION
+        elif composition_1.match(type_str) or composition_2.match(type_str):
+            return UMLRelationType.COMPOSITION
+        elif generalization_1.match(type_str) or generalization_2.match(type_str):
+            return UMLRelationType.GENERALIZATION
+        else:
+            return UMLRelationType.UNKNOWN
+
+
 class UMLRelation(UMLElement, GradeReference):
-    #TODO: Rollen entnehmen und verarbeiten -> repr, plantuml, equals, hash, eq
-    # aktuell bei gleicher verbindung trotzdem eingetragen???
     def __init__(self, type: UMLRelationType, source: UMLElement, destination: UMLElement, s_multiplicity: str = "", d_multiplicity: str = "", description: str = ""):
         self.type: UMLRelationType = type
         self.source: UMLElement = source
@@ -30,10 +52,10 @@ class UMLRelation(UMLElement, GradeReference):
     
     def to_plantuml(self) -> str:
         type_map = {
-            UMLRelationType.ASSOCIATION: "--",
+            UMLRelationType.ASSOCIATION: "-",
             UMLRelationType.ASSOCIATION_LINK: "..",
-            UMLRelationType.AGGREGATION: "--o",
-            UMLRelationType.COMPOSITION: "--*"
+            UMLRelationType.AGGREGATION: "-o",
+            UMLRelationType.COMPOSITION: "-*"
         }
         symbol = type_map.get(self.type, "--")
         return f"{self.source.name} {'\"' + self.s_multiplicity + '\"' if symbol != '..' else ''} {symbol} {'\"' + self.d_multiplicity + '\"' if symbol != '..' else ''} {self.destination.name}{' : ' + self.description if self.description else ''}"
@@ -111,13 +133,22 @@ class UMLRelation(UMLElement, GradeReference):
 
     @staticmethod
     def normalize_multiplicity(multiplicity: str) -> str:
-        # Normalize multiplicity values to standard forms
-        if multiplicity in {"*", "0..*"}:
+        # Remove all whitespaces
+        multiplicity = multiplicity.replace(" ", "")
+        # Remove enclosing [] or ()
+        if (multiplicity.startswith("[") and multiplicity.endswith("]")) or (multiplicity.startswith("(") and multiplicity.endswith(")")):
+            multiplicity = multiplicity[1:-1]
+        # If multiplicity is in the form "x..x" or "*..*", normalize to "x" or "*"
+        match = re.match(r'^([*\d]+)\.\.([*\d]+)$', multiplicity)
+        if match:
+            first, last = match.groups()
+            if first == last:
+                multiplicity = first
+        # Normalize common forms not captured by regex
+        if multiplicity == "0..*":
             multiplicity = "*"
-        elif multiplicity in {"1", "1..1", ""}:
+        if multiplicity == "":
             multiplicity = "1"
-        elif multiplicity in {"0", "0..0"}:
-            multiplicity = "0"
         return multiplicity
 
     def compare_content_to_student(self, stud_relation: 'UMLRelation', element_match_map: Dict[UMLElement, UMLElement]) -> Dict[str, bool]:

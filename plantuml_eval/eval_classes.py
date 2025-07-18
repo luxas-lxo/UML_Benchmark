@@ -166,7 +166,6 @@ class ClassComperator:
                     # NOTE: the authors recomends to follow the inheritance hierarchy all the way up, but for the given test cases, 2 levels of inheritance are sufficient
                     elif reversed_class_match_map.get(c_s) and (c_i == reversed_class_match_map.get(c_s).super_class or (reversed_class_match_map.get(c_s).super_class and c_i == reversed_class_match_map.get(c_s).super_class.super_class)) and a_i.visibility != UMLVisibility.PRIVATE:
                         #11:matchedAttrMap.put(As, Ai)
-                        # TODO: mark the partial points somehow
                         possible_attr_matches[a_i].append(a_s)
 
         # NOTE: **added additionally**

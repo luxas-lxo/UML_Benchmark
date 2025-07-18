@@ -23,7 +23,7 @@ class EnumComperator:
     #Algorithm 6 Compare ENUM in InstructorModel and StudentModel
     #1: procedure COMPAREENUM(InstructorModel, StudentModel)
     @staticmethod
-    def compare_enums(instructor_model: UMLModel, student_model: UMLModel, grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLEnum, UMLEnum], List[UMLEnum], Dict[UMLValue, Union[UMLAttribute, UMLClass]]]:
+    def compare_enums(instructor_model: UMLModel, student_model: UMLModel, grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLEnum, UMLEnum], List[UMLEnum], Dict[UMLValue, Union[UMLAttribute, UMLClass]], Dict[UMLValue, UMLValue], Dict[UMLValue, UMLValue], List[UMLValue]]:
         logger.debug("Starting enum comparison")
         enum_match_map: Dict[UMLEnum, UMLEnum] = {}
         miss_enum_list: List[UMLEnum] = []
@@ -57,7 +57,11 @@ class EnumComperator:
         miss_enum_list.extend(new_miss_inst_enums)
 
         # NOTE: maybe also search for enums that are a match with a class
-        # TODO: match values before proceeding with missplaced values
+        # NOTE: **added additionally**
+        # maps enum literals befor proceeding with possible misplaced literals in classes as attributes or as a class in general
+        inst_literals: List[UMLValue] = [value for enum in inst_enum_list for value in enum.values]
+        stud_literals: List[UMLValue] = [value for enum in stud_enum_list for value in enum.values]
+        literal_match_map, misplaced_literal_map, miss_literal_list = EnumComperator.compare_literals(inst_literals, stud_literals, enum_match_map, grade_model)
 
         #10: studClassList ← StudentModel.getClass()
         stud_class_list = student_model.class_list
@@ -69,7 +73,9 @@ class EnumComperator:
         #12: for all ENUM Ei in instENUMList do
         for ei in inst_enum_list:
             #13: for all literal L in Ei.literal do 
-            for value in ei.values:
+            # NOTE: here it seemed more appropriate to only use literals that are not matched yet
+            missing_values = [v for v in ei.values if v in miss_literal_list]
+            for value in missing_values:
                 #14:for all Attribute As in studClassList do
                 for a_s in stud_att_list:
                     #15:if As.Name.syntacticMatch(L.Name) or As.Name.semanticMatch(L.Name) then
@@ -85,9 +91,54 @@ class EnumComperator:
                         possible_misplaced_values[value] = cs
                         logger.debug(f"Enum literal match with class found: {str(value)} with {str(cs)}")
         # NOTE: possible missplaced values are for this grading algorithm not used, but they can be used in the future to improve the grading process
-        # this is because an enum is graded as a whole, not its values separately
-        # in addition as of now there is no implementation of a choosing of the best match for a value
 
         logger.info("finished compare enums method\n")
         #20: return enumMatchMap
-        return enum_match_map, miss_enum_list, possible_misplaced_values
+        return enum_match_map, miss_enum_list, possible_misplaced_values, literal_match_map, misplaced_literal_map, miss_literal_list
+    
+    # NOTE: **added additionally**
+    # this is adapted from the attribute comparison algorithm (compare_attributes)
+    @staticmethod
+    def compare_literals(inst_lit_list: List[UMLValue], stud_lit_list: List[UMLValue], enum_match_map: Dict[UMLEnum, UMLEnum], grade_model: GradeModel) -> Tuple[Dict[UMLValue, UMLValue], Dict[UMLValue, UMLValue], List[UMLValue]]:
+        logger.debug("Starting literal comparison")
+        literal_match_map: Dict[UMLValue, UMLValue] = {}
+        misplaced_literal_map: Dict[UMLValue, UMLValue] = {}
+        miss_literal_list: List[UMLValue] = []
+
+        possible_literal_matches: Dict[UMLValue, List[UMLValue]] = {}
+        possible_misplaced_lit_matches: Dict[UMLValue, List[UMLValue]] = {}
+        unmatched_inst_literals: List[UMLValue] = []
+
+        for l_i in inst_lit_list:
+            e_i = l_i.reference
+            possible_literal_matches[l_i] = []
+            for l_s in stud_lit_list:
+                e_s = l_s.reference
+                if SyntacticCheck.syntactic_match(l_s.name, l_i.name)[0]:
+                    # check if the enum of the literal is a match
+                    if enum_match_map.get(e_i) == e_s:
+                        possible_literal_matches[l_i].append(l_s)
+                elif SemanticCheck.semantic_match(l_s.name, l_i.name)[0]:
+                    # check if the enum of the literal is a match
+                    if enum_match_map.get(e_i) == e_s:
+                        possible_literal_matches[l_i].append(l_s)
+        
+        safe_literal_matches, best_literal_match_map = EvalHelper.handle_possible_matches(possible_literal_matches, grade_model)
+        new_matched_literals, new_miss_inst_literals = EvalHelper.handle_safe_and_best_matches(inst_lit_list, safe_literal_matches, best_literal_match_map, literal_match_map)
+        literal_match_map.update(new_matched_literals)
+        unmatched_inst_literals.extend(new_miss_inst_literals)
+
+        unmatched_stud_literals = [l_s for l_s in stud_lit_list if l_s not in literal_match_map.values()]
+        for l_i in unmatched_inst_literals:
+            possible_misplaced_lit_matches[l_i] = []
+            for l_s in unmatched_stud_literals:
+                if SyntacticCheck.syntactic_match(l_s.name, l_i.name)[0] or SemanticCheck.semantic_match(l_s.name, l_i.name)[0]:
+                    possible_misplaced_lit_matches[l_i].append(l_s)
+        
+        safe_misplaced_literals, best_misplaced_literal_map = EvalHelper.handle_possible_matches(possible_misplaced_lit_matches, grade_model, literal_match_map)
+        new_misplaced_literals, new_miss_inst_misplaced = EvalHelper.handle_safe_and_best_matches(inst_lit_list, safe_misplaced_literals, best_misplaced_literal_map, literal_match_map)
+        misplaced_literal_map.update(new_misplaced_literals)
+        miss_literal_list.extend(new_miss_inst_misplaced)
+
+        logger.info("finished compare literals method\n")
+        return literal_match_map, misplaced_literal_map, miss_literal_list

@@ -56,17 +56,17 @@ class TestUMLRelation(unittest.TestCase):
         self.assertEqual(str(self.relation), expected)
 
     def test_uml_relation_to_plantuml_association(self):
-        expected = 'Source "1" -- "*" Destination'
+        expected = 'Source "1" - "*" Destination'
         self.assertEqual(self.relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_aggregation(self):
         relation = UMLRelation(type=UMLRelationType.AGGREGATION, source=self.source, destination=self.destination, s_multiplicity="1", d_multiplicity="0..*")
-        expected = 'Source "1" --o "*" Destination'
+        expected = 'Source "1" -o "*" Destination'
         self.assertEqual(relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_composition(self):
         relation = UMLRelation(type=UMLRelationType.COMPOSITION, source=self.source, destination=self.destination, s_multiplicity="1", d_multiplicity="0..*")
-        expected = 'Source "1" --* "*" Destination'
+        expected = 'Source "1" -* "*" Destination'
         self.assertEqual(relation.to_plantuml(), expected)
 
     def test_uml_relation_to_plantuml_association_link(self):

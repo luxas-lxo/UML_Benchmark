@@ -31,3 +31,13 @@ print(repr(eval_model))
 
 eval_handler = EvalHandler(eval_model)
 print(repr(eval_handler))
+
+#TODO: restructure metrics
+#TODO: add outpu file
+#TODO: compute score against solution with garde model
+#TODO: add inherentance 
+#TODO add missplaced/alternative stuff to semantic evaluator
+#TODO: move get_numbers_or_stars_from_multiplicity() to PlantUML parser or relation class
+#TODO: add weight to metrics
+#TODO in eval attribute and operation use seperate maps for inheritance atts und opps
+#TODO: test relations

@@ -7,6 +7,7 @@ from typing import List, Optional
 class UMLValue(GradeReference):
     def __init__(self, name: str):
         self.name = name
+        self.reference: Optional[UMLEnum] = None  
 
     def __repr__(self):
         return f"UMLValue({self.name})"
@@ -24,6 +25,7 @@ class UMLEnum(UMLElement, GradeReference):
         super().__init__(name)
         self.values: List[UMLValue] = values if values is not None else []
         self.relations: List[UMLRelation] = []
+        self.asign_content_reference()
 
     def __repr__(self): 
         return f"UMLEnum({self.name}): values [{', '.join(v.name for v in self.values)}]"
@@ -43,3 +45,8 @@ class UMLEnum(UMLElement, GradeReference):
     def add_relation(self, relation: UMLRelation):
         if relation not in self.relations:
             self.relations.append(relation)
+    
+    def asign_content_reference(self):
+        for value in self.values:
+            value.reference = self
+        

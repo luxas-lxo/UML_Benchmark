@@ -123,7 +123,7 @@ class TestUMLModel(unittest.TestCase):
             "\tVALUE1",
             "\tVALUE2",
             "}",
-            "TestClass \"1\" -- \"1\" TestEnum",
+            "TestClass \"1\" - \"1\" TestEnum",
             "@enduml"
         ]
         expected_plantuml = '\n'.join(expected_plantuml_lines)

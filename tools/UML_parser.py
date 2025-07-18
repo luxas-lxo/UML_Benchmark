@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger("uml.parser")
 logger.setLevel(logging.INFO)
+ERROR_FLAG = "--error--"
 
 class UMLParser:
     
@@ -35,7 +36,7 @@ class UMLParser:
         name = match.group("name") or ""
         if name.strip() == "":
             logger.warning("Attribute name not specified, setting to '--error--'.")
-            name = "--error--"
+            name = ERROR_FLAG
         derived = bool(match.group("derived"))
         vis_symbol = match.group("visibility") or ""
         visibility = UMLVisibility.from_string(vis_symbol)
@@ -49,13 +50,12 @@ class UMLParser:
 
         if match.group("initial") is not None and match.group("initial").strip() == "":
             logger.warning(f"Initial value not specified for attribute '{name}', syntax error.")    
-            initial = "--error--"
+            initial = ERROR_FLAG
         else:
             initial = match.group("initial").strip() if match.group("initial") else ""
 
         return UMLAttribute(name=name, data_type=datatype, initial=initial, visibility=visibility, derived=derived)
 
-    #TODO: ()
     @staticmethod
     def parse_operation(line: str) -> UMLOperation:
         operation_pattern = regex.compile(
@@ -76,7 +76,7 @@ class UMLParser:
         name = match.group("name") or ""
         if name.strip() == "":
             logger.warning("Operation name not specified, setting to '--error--'.")
-            name = "--error--"
+            name = ERROR_FLAG
         param_str = match.group("params").strip()
         return_type_str = (match.group("return_type") or "void").strip()
 
@@ -116,7 +116,7 @@ class UMLParser:
             name = match.group("name") or ""
             if name.strip() == "":
                 logger.warning("Class name not specified, setting to '--error--'.")
-                name = "--error--"
+                name = ERROR_FLAG
             body = match.group("body") or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
             attributes = []
@@ -132,43 +132,50 @@ class UMLParser:
     
     @staticmethod
     def parse_plantuml_enums(uml_text: str) -> List[UMLEnum]:
-        enum_pattern = re.compile(r'enum\s+(\w+)(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*([^}]*)\})?', re.MULTILINE | re.DOTALL)
+        enum_pattern = re.compile(
+            r'enum\s+(?P<name>\w+)?(?:\s+[aA][sS]\s+"[^"]*")?\s*(?:\{\s*(?P<body>[^}]*)\})?',
+            re.MULTILINE | re.DOTALL
+        )
         enums = []
 
         for match in enum_pattern.finditer(uml_text):
-            name = match.group(1)
-            body = match.group(2) or ""
+            name = match.group("name") or ""
+            if name.strip() == "":
+                logger.warning("Enum name not specified, setting to '--error--'.")
+                name = ERROR_FLAG
+            body = match.group("body") or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
-            values = [UMLValue(line) for line in lines]
+            values = [UMLValue(line) if "  " not in line else UMLValue(ERROR_FLAG) for line in lines]
             enums.append(UMLEnum(name, values)) 
 
         return enums
     
-    # TODO: parse role names
     @staticmethod
-    def parse_relation_left_to_right(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_relation_left_to_right(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         #1.1) A "m1" -> "m2" B : desc
         bin_pattern = re.compile(
-            r'(?P<a>\w\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>-{1,2}[\w\*\|\<\>]{0,2})\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
+            r'(?P<a>\w\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>-+[\w\*\|\<\>]{0,2})\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
         )
         for match in bin_pattern.finditer(uml_text):
             a = match.group("a")
             b = match.group("b")
             m1 = match.group("m1") or ""
             m2 = match.group("m2") or ""
+            rel_type = UMLRelationType.from_string(match.group("type"))
+            if rel_type == UMLRelationType.UNKNOWN:
+                logger.warning(f"Unknown relation type '{match.group('type')}' in relation '{a} -> {b}', setting to UNKNOWN.")
             description = match.group("desc").strip() if match.group("desc") else ""
 
             if a in element_lookup and b in element_lookup:
-                rel_type = type_map.get(match.group("type"), UMLRelationType.UNKNOWN)
                 if m1 != " " and not SyntacticCheck.is_valid_multiplicity(m1):
                     logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting m1 to '--error--'.")
-                    m1 = "--error--"
+                    m1 = ERROR_FLAG
                 if m2 != " " and not SyntacticCheck.is_valid_multiplicity(m2):
                     logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '--error--'.")
-                    m2 = "--error--"
+                    m2 = ERROR_FLAG
                 if match.group("desc") is not None and match.group("desc").strip() == "":
                     logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '--error--'.")
-                    description = "--error--" 
+                    description = ERROR_FLAG 
 
                 relation = UMLRelation(
                     type=rel_type,
@@ -185,30 +192,32 @@ class UMLParser:
                 logger.warning(f"relation between '{a}' and '{b}' could not be created, as one of the elements was not found.")
 
     @staticmethod
-    def parse_relation_right_to_left(uml_text: str, type_map: Dict[str, UMLRelationType], element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
+    def parse_relation_right_to_left(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 1.2) A "m1" <- "m2" B : desc
         bin_pattern = re.compile(
-            r'(?P<a>\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>[\w\*\|\<\>]{1,2}-{1,2})\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
+            r'(?P<a>\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>[\w\*\|\<\>]{1,2}-+)\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
         )
         for match in bin_pattern.finditer(uml_text):
             a = match.group("a")
             b = match.group("b")
             m1 = match.group("m1") or ""
             m2 = match.group("m2") or ""
-            rel_type = type_map.get(match.group("type"), UMLRelationType.UNKNOWN)
+            rel_type = UMLRelationType.from_string(match.group("type"))
+            if rel_type == UMLRelationType.UNKNOWN:
+                logger.warning(f"Unknown relation type '{match.group('type')}' in relation '{a} <- {b}', setting to UNKNOWN.")
             description = match.group("desc").strip() if match.group("desc") else ""
 
             if a in element_lookup and b in element_lookup:
                 # Multiplicity validation
                 if m1 != " " and not SyntacticCheck.is_valid_multiplicity(m1):
                     logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting to m1 '--error--'.")
-                    m1 = "--error--"
+                    m1 = ERROR_FLAG
                 if m2 != " " and not SyntacticCheck.is_valid_multiplicity(m2):
                     logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '--error--'.")
-                    m2 = "--error--"
+                    m2 = ERROR_FLAG
                 if match.group("desc") is not None and match.group("desc").strip() == "":
                     logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '--error--'.")
-                    description = "--error--"
+                    description = ERROR_FLAG
 
                 relation = UMLRelation(
                     type=rel_type,
@@ -226,7 +235,7 @@ class UMLParser:
     @staticmethod 
     def parse_asso_class_left_to_right(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 2.1) C .. (A, B)
-        assoc_pattern_1 = re.compile(r'(\w+)\s*\.\.\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
+        assoc_pattern_1 = re.compile(r'(\w+)\s*\.+\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
         for match in assoc_pattern_1.finditer(uml_text):
             raw_c, raw_a, raw_b = match.groups()
             a = raw_a
@@ -248,7 +257,7 @@ class UMLParser:
     @staticmethod
     def parse_asso_class_right_to_left(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 2.2) (A, B) .. C
-        assoc_pattern_2 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.\.\s*(\w+)')
+        assoc_pattern_2 = re.compile(r'\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\.+\s*(\w+)')
         for match in assoc_pattern_2.finditer(uml_text):
             raw_a, raw_b, raw_c = match.groups()
             a = raw_a
@@ -273,24 +282,17 @@ class UMLParser:
         class_lookup: Dict[str, UMLClass] = {cls.name: cls for cls in classes}
         enum_lookup: Dict[str, UMLEnum] = {enu.name: enu for enu in enums}
         element_lookup = class_lookup | enum_lookup
-        type_map = {
-                '--': UMLRelationType.ASSOCIATION,
-                'o--': UMLRelationType.AGGREGATION,
-                '--o': UMLRelationType.AGGREGATION,
-                '*--': UMLRelationType.COMPOSITION,
-                '--*': UMLRelationType.COMPOSITION
-            }
         
         # 1) binary relation with type matching (assoziation, aggregation, komposition)
         # 1.1) ->
         # 1.1.1) A m1 -> m2 B
         # 1.1.2) A -> B
-        UMLParser.parse_relation_left_to_right(uml_text, type_map, element_lookup, relations)
+        UMLParser.parse_relation_left_to_right(uml_text, element_lookup, relations)
         
         # 1.2) <-
         # 1.2.1) A m1 <- m2 B
         # 1.2.2) A <- B
-        UMLParser.parse_relation_right_to_left(uml_text, type_map, element_lookup, relations)
+        UMLParser.parse_relation_right_to_left(uml_text, element_lookup, relations)
         
         # 2.) association class
         # 2.1) C .. (A, B)
