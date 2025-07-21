@@ -161,10 +161,11 @@ class UMLParser:
     @staticmethod
     def parse_relation_left_to_right(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         #1.1) A "m1" -> "m2" B : desc
+        # Only match relations that occur within a single line (no multiline matches)
         bin_pattern = re.compile(
-            r'(?P<a>\w\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>-+[\w\*\|\<\>]{0,2})\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
+            r'(?P<a>\w\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>-+[o\*\|\<\>]{0,2})\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
         )
-        for match in bin_pattern.finditer(uml_text):
+        for match in bin_pattern.finditer(uml_text.strip()):
             a = match.group("a")
             b = match.group("b")
             m1 = match.group("m1") or ""
@@ -203,7 +204,7 @@ class UMLParser:
     def parse_relation_right_to_left(uml_text: str, element_lookup: Dict[str, UMLElement], relations: List[UMLRelation]):
         # 1.2) A "m1" <- "m2" B : desc
         bin_pattern = re.compile(
-            r'(?P<a>\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>[\w\*\|\<\>]{1,2}-+)\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
+            r'(?P<a>\w+)\s*(?:"(?P<m1>[^"]*)")?\s*(?P<type>[o\*\|\<\>]{1,2}-+)\s*(?:"(?P<m2>[^"]*)")?\s*(?P<b>\w+)(?:\s*:\s*(?P<desc>.*))?'
         )
         for match in bin_pattern.finditer(uml_text):
             a = match.group("a")

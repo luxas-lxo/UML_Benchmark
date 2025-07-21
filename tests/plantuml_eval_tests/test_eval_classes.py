@@ -333,16 +333,17 @@ class TestClassComperator(unittest.TestCase):
         """
         from student model expected possible matches would be:
             Apple -> Apples syntactic match, Apple syntactic match
-            Banana -> Date content match
+            Banana -> Cherry content match, Date content match
             Cherry -> Cherry syntactic match
             Date -> Date syntactic match
             Elderberry -> None
 
         expected safe matches:
-            Cherry -> Cherry
+            None
 
         expected best matches:
             Apple -> Apples
+            Cherry -> Cherry
             Date -> Date
 
         expected relation matches:
@@ -354,7 +355,6 @@ class TestClassComperator(unittest.TestCase):
         
         NOTE: may differ, when thresholds are changed in the tools.checker modules
         """
-
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)
         self.assertEqual(len(result[0]), 4)
@@ -496,29 +496,35 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_compare_attributes_empty(self):
         result = ClassComperator.compare_attributes([], [], {}, {})
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
+        self.assertIsInstance(result[3], list)
+        self.assertEqual(len(result[3]), 0)
 
     def test_comperator_compare_attributes_instructor_empty(self):
         result = ClassComperator.compare_attributes([], self.student_attr_list, self.true_class_matches, self.revered_true_class_matches)
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
+        self.assertIsInstance(result[3], list)
+        self.assertEqual(len(result[3]), 0)
 
     def test_comperator_compare_attributes_student_empty(self):
-        attr_match_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, [], self.true_class_matches, self.revered_true_class_matches)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, [], self.true_class_matches, self.revered_true_class_matches)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 0)
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 0)
         self.assertIsInstance(miss_att_list, list)
@@ -530,9 +536,11 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(miss_att_list[4], self.inst_attr_list[4])
 
     def test_comperator_compare_attributes_match_map_empty_equal(self):
-        attr_match_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.inst_attr_list, {}, {}, self.grade_model)
+        attr_match_map, inherited_attr_map ,misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.inst_attr_list, {}, {}, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 0)
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 5)
         self.assertIsInstance(miss_att_list, list)
@@ -573,9 +581,12 @@ class TestClassComperator(unittest.TestCase):
         banana: +length: int -> cherry: +size: int or date: +length: int
             NOTE: same here just with semantic equivalent names, but the attributes are not considered equivalent so it could be mapped either to cherry or date
         """
-        attr_match_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.student_attr_list, {}, {}, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.student_attr_list, {}, {}, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 0)
+
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
 
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 4)
@@ -592,7 +603,7 @@ class TestClassComperator(unittest.TestCase):
         #TODO: expand this test to check for inheritance 
 
     def test_comperator_compare_attributes_equal(self):
-        attr_match_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.inst_attr_list, self.match_map_id, self.match_map_id, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.inst_attr_list, self.match_map_id, self.match_map_id, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 5)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apple_attr_1)
@@ -601,6 +612,9 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(attr_match_map[self.banana_attr_2], self.banana_attr_2)
         self.assertEqual(attr_match_map[self.elderberry_attr_1], self.elderberry_attr_1)
 
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
+
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 0)
 
@@ -608,11 +622,14 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(len(miss_att_list), 0)
 
     def test_comperator_compare_attributes_different(self):
-        attr_match_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.student_attr_list, self.true_class_matches, self.revered_true_class_matches, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_att_list = ClassComperator.compare_attributes(self.inst_attr_list, self.student_attr_list, self.true_class_matches, self.revered_true_class_matches, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 2)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apples_attr_1)
         self.assertEqual(attr_match_map[self.apple_attr_2], self.apples_attr_2)
+
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
 
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 2)
@@ -678,29 +695,35 @@ class TestClassComperator(unittest.TestCase):
     def test_comperator_compare_operations_empty(self):
         result = ClassComperator.compare_operations([], [], {}, {})
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
+        self.assertIsInstance(result[3], list)
+        self.assertEqual(len(result[3]), 0)
 
     def test_comparator_compare_operations_instructor_empty(self):
         result = ClassComperator.compare_operations([], self.student_op_list, self.true_class_matches, self.revered_true_class_matches)
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
+        self.assertIsInstance(result[3], list)
+        self.assertEqual(len(result[3]), 0)
 
     def test_comparator_compare_operations_student_empty(self):
-        op_match_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, [], self.true_class_matches, self.revered_true_class_matches)
+        op_match_map, inherited_op_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, [], self.true_class_matches, self.revered_true_class_matches)
         self.assertIsInstance(op_match_map, dict)
         self.assertEqual(len(op_match_map), 0)
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 0)
         self.assertIsInstance(miss_op_list, list)
@@ -712,9 +735,11 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(miss_op_list[4], self.elderberry_op_1)
 
     def test_comparator_compare_operations_match_map_empty_equal(self):
-        op_match_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.inst_op_list, {}, {}, self.grade_model)
+        op_match_map, inherited_op_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.inst_op_list, {}, {}, self.grade_model)
         self.assertIsInstance(op_match_map, dict)
         self.assertEqual(len(op_match_map), 0)
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 5)
         self.assertIsInstance(miss_op_list, list)
@@ -752,9 +777,12 @@ class TestClassComperator(unittest.TestCase):
                #selectTree(): String -> apples: #chooseTree(): String
         banana: eat() -> cherry: consume() or date: eat() NOTE: same as attribute with semantics
         """
-        op_match_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.student_op_list, {}, {}, self.grade_model)
+        op_match_map, inherited_op_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.student_op_list, {}, {}, self.grade_model)
         self.assertIsInstance(op_match_map, dict)
         self.assertEqual(len(op_match_map), 0)
+
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
 
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 4)
@@ -769,9 +797,11 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(miss_op_list[0], self.elderberry_op_1)
         
     def test_comparator_compare_operations_equal(self):
-        op_match_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.inst_op_list, self.match_map_id, self.match_map_id, self.grade_model)
+        op_match_map, inherited_op_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.inst_op_list, self.match_map_id, self.match_map_id, self.grade_model)
         self.assertIsInstance(op_match_map, dict)
         self.assertEqual(len(op_match_map), 5)
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 0)
         self.assertIsInstance(miss_op_list, list)
@@ -783,11 +813,14 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(op_match_map[self.elderberry_op_1], self.elderberry_op_1)
 
     def test_comparator_compare_operations_different(self):
-        op_match_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.student_op_list, self.true_class_matches, self.revered_true_class_matches, self.grade_model)
+        op_match_map, inherited_op_map, misplaced_op_map, miss_op_list = ClassComperator.compare_operations(self.inst_op_list, self.student_op_list, self.true_class_matches, self.revered_true_class_matches, self.grade_model)
         self.assertIsInstance(op_match_map, dict)
         self.assertEqual(len(op_match_map), 2)
         self.assertEqual(op_match_map[self.apple_op_1], self.apples_op_1)
         self.assertEqual(op_match_map[self.apple_op_2], self.apples_op_2)
+
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
 
         self.assertIsInstance(misplaced_op_map, dict)
         self.assertEqual(len(misplaced_op_map), 2)
@@ -804,43 +837,53 @@ class TestClassComperator(unittest.TestCase):
         instructor_model = UMLModel("@startuml\n@enduml")
         result = ClassComperator.compare_class_content(instructor_model, student_model, {}, self.grade_model)
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 6)
+        self.assertEqual(len(result), 8)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
-        self.assertIsInstance(result[3], dict)
+        self.assertIsInstance(result[3], list)
         self.assertEqual(len(result[3]), 0)
         self.assertIsInstance(result[4], dict)
         self.assertEqual(len(result[4]), 0)
-        self.assertIsInstance(result[5], list)
+        self.assertIsInstance(result[5], dict)
         self.assertEqual(len(result[5]), 0)
+        self.assertIsInstance(result[6], dict)
+        self.assertEqual(len(result[6]), 0)
+        self.assertIsInstance(result[7], list)
+        self.assertEqual(len(result[7]), 0)
 
     def test_comparator_compare_content_instructor_empty(self):
         instructor_model = UMLModel("@startuml\n@enduml")
         result = ClassComperator.compare_class_content(instructor_model, self.student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 6)
+        self.assertEqual(len(result), 8)
         self.assertIsInstance(result[0], dict)
         self.assertEqual(len(result[0]), 0)
         self.assertIsInstance(result[1], dict)
         self.assertEqual(len(result[1]), 0)
-        self.assertIsInstance(result[2], list)
+        self.assertIsInstance(result[2], dict)
         self.assertEqual(len(result[2]), 0)
-        self.assertIsInstance(result[3], dict)
+        self.assertIsInstance(result[3], list)
         self.assertEqual(len(result[3]), 0)
         self.assertIsInstance(result[4], dict)
         self.assertEqual(len(result[4]), 0)
-        self.assertIsInstance(result[5], list)
+        self.assertIsInstance(result[5], dict)
         self.assertEqual(len(result[5]), 0)
+        self.assertIsInstance(result[6], dict)
+        self.assertEqual(len(result[6]), 0)
+        self.assertIsInstance(result[7], list)
+        self.assertEqual(len(result[7]), 0)
 
     def test_comparator_compare_content_student_empty(self):
         student_model = UMLModel("@startuml\n@enduml")
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, student_model, self.true_class_matches, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_attr_list, oper_matched_map, inherited_op_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 0)
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 0)
         self.assertIsInstance(miss_attr_list, list)
@@ -853,6 +896,8 @@ class TestClassComperator(unittest.TestCase):
 
         self.assertIsInstance(oper_matched_map, dict)
         self.assertEqual(len(oper_matched_map), 0)
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
         self.assertIsInstance(misplaced_oper_map, dict)
         self.assertEqual(len(misplaced_oper_map), 0)
         self.assertIsInstance(miss_oper_list, list)
@@ -864,7 +909,7 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(miss_oper_list[4], self.elderberry_op_1)
 
     def test_comparator_compare_content_equal(self):
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.instructor_model, self.match_map_id, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_attr_list, oper_matched_map, inherited_op_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.instructor_model, self.match_map_id, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 5)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apple_attr_1)
@@ -872,6 +917,9 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(attr_match_map[self.banana_attr_1], self.banana_attr_1)
         self.assertEqual(attr_match_map[self.banana_attr_2], self.banana_attr_2)
         self.assertEqual(attr_match_map[self.elderberry_attr_1], self.elderberry_attr_1)
+
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
 
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 0)
@@ -887,6 +935,9 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(oper_matched_map[self.banana_op_2], self.banana_op_2)
         self.assertEqual(oper_matched_map[self.elderberry_op_1], self.elderberry_op_1)
 
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
+
         self.assertIsInstance(misplaced_oper_map, dict)
         self.assertEqual(len(misplaced_oper_map), 0)
 
@@ -894,11 +945,14 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(len(miss_oper_list), 0)
 
     def test_comparator_compare_content_different(self):
-        attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.student_model, self.true_class_matches, self.grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_attr_list, oper_matched_map, inherited_op_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_class_content(self.instructor_model, self.student_model, self.true_class_matches, self.grade_model)
         self.assertIsInstance(attr_match_map, dict)
         self.assertEqual(len(attr_match_map), 2)
         self.assertEqual(attr_match_map[self.apple_attr_1], self.apples_attr_1)
         self.assertEqual(attr_match_map[self.apple_attr_2], self.apples_attr_2)
+
+        self.assertIsInstance(inherited_attr_map, dict)
+        self.assertEqual(len(inherited_attr_map), 0)
 
         self.assertIsInstance(misplaced_attr_map, dict)
         self.assertEqual(len(misplaced_attr_map), 2)
@@ -914,12 +968,14 @@ class TestClassComperator(unittest.TestCase):
         self.assertEqual(oper_matched_map[self.apple_op_1], self.apples_op_1)
         self.assertEqual(oper_matched_map[self.apple_op_2], self.apples_op_2)
 
+        self.assertIsInstance(inherited_op_map, dict)
+        self.assertEqual(len(inherited_op_map), 0)
+
         self.assertIsInstance(misplaced_oper_map, dict)
         self.assertEqual(len(misplaced_oper_map), 2)
         self.assertEqual(misplaced_oper_map[self.banana_op_1], self.date_op_1)
         self.assertIn(misplaced_oper_map[self.banana_op_2], (self.cherry_op_1, self.date_op_2))
         
-
         self.assertIsInstance(miss_oper_list, list)
         self.assertEqual(len(miss_oper_list), 1)
         self.assertEqual(miss_oper_list[0], self.elderberry_op_1)

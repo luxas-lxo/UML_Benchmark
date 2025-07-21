@@ -186,7 +186,7 @@ class GradeModel:
         logger.debug(f"Grade for attribute '{att.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")
         return temp_grade
     
-    def grade_operation(self, st_feature: StructuralFeature, opr: UMLOperation) -> float:
+    def grade_operation(self, st_feature: StructuralFeature, opr: UMLOperation, class_match_map: Optional[Dict[UMLClass, UMLClass]] = None) -> float:
         # operation found -> 1/2 points
         temp_grade: float = st_feature.points / 2
         temp_content_grade: float = 0.0
@@ -196,7 +196,14 @@ class GradeModel:
                 # structural match for e.g parameter == parameter
                 temp_content_grade += 1
         # structural match normalized -> 1/2 points
-        temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
+        if class_match_map:
+            if class_match_map.get(st_feature.reference.reference) != opr.reference:
+                # NOTE: the +1 here symbolizes that the operation was inherited 
+                temp_grade += (temp_content_grade / (len(content_check) + 1)) * (st_feature.points / 2)
+            else:
+                temp_grade += ((temp_content_grade + 1) / (len(content_check) + 1)) * (st_feature.points / 2)
+        else:
+            temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
         logger.debug(f"Grade for operation '{opr.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")
         return temp_grade
 
