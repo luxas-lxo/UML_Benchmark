@@ -91,7 +91,8 @@ class EnumComperator:
                         possible_misplaced_values[value] = cs
                         logger.debug(f"Enum literal match with class found: {str(value)} with {str(cs)}")
         # NOTE: possible missplaced values are for this grading algorithm not used, but they can be used in the future to improve the grading process
-
+        # this is why here is also no safe and best match handling etc.
+        
         logger.info("finished compare enums method\n")
         #20: return enumMatchMap
         return enum_match_map, miss_enum_list, possible_misplaced_values, literal_match_map, misplaced_literal_map, miss_literal_list

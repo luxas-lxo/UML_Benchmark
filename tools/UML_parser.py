@@ -35,7 +35,7 @@ class UMLParser:
         
         name = match.group("name") or ""
         if name.strip() == "":
-            logger.warning("Attribute name not specified, setting to '--error--'.")
+            logger.warning(f"Attribute name not specified, setting to '{ERROR_FLAG}'.")
             name = ERROR_FLAG
         derived = bool(match.group("derived"))
         vis_symbol = match.group("visibility") or ""
@@ -75,7 +75,7 @@ class UMLParser:
 
         name = match.group("name") or ""
         if name.strip() == "":
-            logger.warning("Operation name not specified, setting to '--error--'.")
+            logger.warning(f"Operation name not specified, setting to '{ERROR_FLAG}'.")
             name = ERROR_FLAG
         param_str = match.group("params").strip()
         return_type_str = (match.group("return_type") or "void").strip()
@@ -86,13 +86,21 @@ class UMLParser:
                 param = param.strip()
                 if ":" in param:
                     pname, ptype = map(str.strip, param.split(":", 1))
+                    if pname.strip() == "":
+                        logger.warning(f"Parameter name not specified, setting to '{ERROR_FLAG}'.")
+                        pname = ERROR_FLAG
                     if ptype.strip() == "":
                         logger.warning(f"Data type not specified for parameter '{pname}', setting data type to UMLDataType.ERROR due to syntax error.")
                         params[pname] = UMLDataType.ERROR
                     else:
                         params[pname] = UMLDataType.from_string(ptype)
                 else:
-                    params[param] = UMLDataType.UNKNOWN
+                    if param == "":
+                        logger.warning(f"Empty parameter found in operation '{name}', setting to '{ERROR_FLAG}'.")
+                        params[ERROR_FLAG] = UMLDataType.UNKNOWN
+                    else:
+                        params[param] = UMLDataType.UNKNOWN
+
 
         if return_type_str is not None and return_type_str.strip() == "":
             logger.warning(f"Return type not specified for operation '{name}', setting return type to UMLDataType.ERROR due to syntax error.")
@@ -115,7 +123,7 @@ class UMLParser:
         for match in class_pattern.finditer(uml_text):
             name = match.group("name") or ""
             if name.strip() == "":
-                logger.warning("Class name not specified, setting to '--error--'.")
+                logger.warning(f"Class name not specified, setting to '{ERROR_FLAG}'.")
                 name = ERROR_FLAG
             body = match.group("body") or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
@@ -141,7 +149,7 @@ class UMLParser:
         for match in enum_pattern.finditer(uml_text):
             name = match.group("name") or ""
             if name.strip() == "":
-                logger.warning("Enum name not specified, setting to '--error--'.")
+                logger.warning(f"Enum name not specified, setting to '{ERROR_FLAG}'.")
                 name = ERROR_FLAG
             body = match.group("body") or ""
             lines = [line.strip() for line in body.strip().splitlines() if line.strip()]
@@ -168,13 +176,13 @@ class UMLParser:
 
             if a in element_lookup and b in element_lookup:
                 if m1 != " " and not SyntacticCheck.is_valid_multiplicity(m1):
-                    logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting m1 to '--error--'.")
+                    logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting m1 to '{ERROR_FLAG}'.")
                     m1 = ERROR_FLAG
                 if m2 != " " and not SyntacticCheck.is_valid_multiplicity(m2):
-                    logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '--error--'.")
+                    logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '{ERROR_FLAG}'.")
                     m2 = ERROR_FLAG
                 if match.group("desc") is not None and match.group("desc").strip() == "":
-                    logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '--error--'.")
+                    logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '{ERROR_FLAG}'.")
                     description = ERROR_FLAG 
 
                 relation = UMLRelation(
@@ -210,13 +218,13 @@ class UMLParser:
             if a in element_lookup and b in element_lookup:
                 # Multiplicity validation
                 if m1 != " " and not SyntacticCheck.is_valid_multiplicity(m1):
-                    logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting to m1 '--error--'.")
+                    logger.warning(f"Multiplicity for source in relation '{a} {match.group('type')} {b}' is invalid, setting to m1 '{ERROR_FLAG}'.")
                     m1 = ERROR_FLAG
                 if m2 != " " and not SyntacticCheck.is_valid_multiplicity(m2):
-                    logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '--error--'.")
+                    logger.warning(f"Multiplicity for destination in relation '{a} {match.group('type')} {b}' is invalid, setting m2 to '{ERROR_FLAG}'.")
                     m2 = ERROR_FLAG
                 if match.group("desc") is not None and match.group("desc").strip() == "":
-                    logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '--error--'.")
+                    logger.warning(f"Description for relation '{a} {match.group('type')} {b}' is empty, setting to '{ERROR_FLAG}'.")
                     description = ERROR_FLAG
 
                 relation = UMLRelation(

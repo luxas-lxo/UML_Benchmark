@@ -132,7 +132,7 @@ class ClassComperator:
 
     # first part of algorithm 2
     @staticmethod
-    def compare_attributes(inst_att_list: List[UMLAttribute], stud_att_list: List[UMLAttribute], class_match_map: Dict[UMLClass, UMLClass], reversed_class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], List[UMLAttribute]]:
+    def compare_attributes(inst_att_list: List[UMLAttribute], stud_att_list: List[UMLAttribute], class_match_map: Dict[UMLClass, UMLClass], reversed_class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], List[UMLAttribute]]:
         logger.info("starting compare attributes method")
         # helper variables
         possible_attr_matches: Dict[UMLAttribute, List[UMLAttribute]] = {}
@@ -144,6 +144,7 @@ class ClassComperator:
 
         # final variables for return
         attr_match_map: Dict[UMLAttribute, UMLAttribute] = {}
+        inherited_attr_map: Dict[UMLAttribute, UMLAttribute] = {}
         misplaced_attr_map: Dict[UMLAttribute, UMLAttribute] = {}
         miss_att_list: List[UMLAttribute] = []
 
@@ -170,10 +171,18 @@ class ClassComperator:
 
         # NOTE: **added additionally**
         # same as in algorithm 1, we find the safe matches and best match assignments among the possible matches and assign them to the attr_match_map
-        safe_attr_matches, best_attr_match_map = EvalHelper.handle_possible_matches(possible_attr_matches, grade_model)
+        safe_attr_matches, best_attr_match_map = EvalHelper.handle_possible_matches(possible_attr_matches, grade_model, class_match_map)
         new_matched_attrs, new_miss_inst_attrs = EvalHelper.handle_safe_and_best_matches(inst_att_list, safe_attr_matches, best_attr_match_map, attr_match_map)
         attr_match_map.update(new_matched_attrs)
         unmatched_inst_attrs.extend(new_miss_inst_attrs)
+
+        # this part seperates the inherited attributes from the matched attributes for later evaluation
+        for a_i, a_s in attr_match_map.items():
+            if class_match_map.get(a_i.reference) != a_s.reference:
+                inherited_attr_map[a_i] = a_s
+        for a_i in inherited_attr_map:
+            if a_i in attr_match_map:
+                del attr_match_map[a_i]
 
         # NOTE: the following lines are adapted, since it seems more efficient to test only for unmatched instructor attributes
         # the comments still show the original algorithm structure
@@ -189,16 +198,16 @@ class ClassComperator:
 
         # NOTE: **added additionally**
         safe_attr_matches, best_attr_match_map = EvalHelper.handle_possible_matches(possible_missplaced_attr_matches, grade_model)
-        new_matched_attrs, new_miss_inst_attrs = EvalHelper.handle_safe_and_best_matches(inst_att_list, safe_attr_matches, best_attr_match_map, attr_match_map)
+        new_matched_attrs, new_miss_inst_attrs = EvalHelper.handle_safe_and_best_matches(inst_att_list, safe_attr_matches, best_attr_match_map, {**attr_match_map, **inherited_attr_map})
         misplaced_attr_map.update(new_matched_attrs)
         miss_att_list.extend(new_miss_inst_attrs)
 
         logger.info("finished compare attributes method\n")
-        return attr_match_map, misplaced_attr_map, miss_att_list
+        return attr_match_map, inherited_attr_map, misplaced_attr_map, miss_att_list
 
     # second part of algorithm 2
     @staticmethod
-    def compare_operations(inst_opr_list: List[UMLOperation], stud_opr_list: List[UMLOperation], class_match_map: Dict[UMLClass, UMLClass], reversed_class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], List[UMLOperation]]:
+    def compare_operations(inst_opr_list: List[UMLOperation], stud_opr_list: List[UMLOperation], class_match_map: Dict[UMLClass, UMLClass], reversed_class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], List[UMLOperation]]:
         logger.info("starting compare operations method")
         # helper variables
         possible_oper_matches: Dict[UMLOperation, List[UMLOperation]] = {}
@@ -210,6 +219,7 @@ class ClassComperator:
 
         # final variables for return
         oper_match_map: Dict[UMLOperation, UMLOperation] = {}
+        inherited_oper_map: Dict[UMLOperation, UMLOperation] = {}
         misplaced_oper_match_map: Dict[UMLOperation, UMLOperation] = {}
         miss_opr_list: List[UMLOperation] = []
 
@@ -230,17 +240,23 @@ class ClassComperator:
                     #23:else if Ci is superClass of classMatchMap.get(Cs) and Oi is not private then 
                     # NOTE: the authors recomends to follow the inheritance hierarchy all the way up, but for the given test cases, 2 levels of inheritance are sufficient
                     elif reversed_class_match_map.get(cs) and (ci == reversed_class_match_map.get(cs).super_class or (reversed_class_match_map.get(cs).super_class and ci == reversed_class_match_map.get(cs).super_class.super_class)) and oi.visibility != UMLVisibility.PRIVATE:
-                        #24:matchedOperMap.put(Os, Oi) 
-                        # TODO: mark the partial points somehow
+                        #24:matchedOperMap.put(Os, Oi)
                         possible_oper_matches[oi].append(os)
         
         # NOTE: **added additionally**
         # same as in algorithm 1, we find the safe matches and best match assignments among the possible matches and assign them to the attr_match_map
-        safe_opr_matches, best_opr_match_map = EvalHelper.handle_possible_matches(possible_oper_matches, grade_model)
+        safe_opr_matches, best_opr_match_map = EvalHelper.handle_possible_matches(possible_oper_matches, grade_model, class_match_map)
         new_matched_opers, new_miss_inst_opers = EvalHelper.handle_safe_and_best_matches(inst_opr_list, safe_opr_matches, best_opr_match_map, oper_match_map)
         oper_match_map.update(new_matched_opers)
         unmatched_inst_opers.extend(new_miss_inst_opers)
 
+        # this part seperates the inherited operations from the matched operations for later evaluation
+        for oi, os in oper_match_map.items():
+            if class_match_map.get(oi.reference) != os.reference:
+                inherited_oper_map[oi] = os
+        for oi in inherited_oper_map:
+            if oi in oper_match_map:
+                del oper_match_map[oi]
 
         #25: for all Operation Oi in instOperList, Os in studOperList do
         unmatched_stud_opers = [opr for opr in stud_opr_list if opr not in oper_match_map.values()]
@@ -258,17 +274,17 @@ class ClassComperator:
         # NOTE: **added additionally**
         # same as in algorithm 1, we find the safe matches and best match assignments among the possible matches and assign them to the attr_match_map
         safe_opr_matches, best_opr_match_map = EvalHelper.handle_possible_matches(possible_missplaced_oper_matches, grade_model)
-        new_matched_opers, new_miss_inst_opers = EvalHelper.handle_safe_and_best_matches(inst_opr_list, safe_opr_matches, best_opr_match_map, oper_match_map)
+        new_matched_opers, new_miss_inst_opers = EvalHelper.handle_safe_and_best_matches(inst_opr_list, safe_opr_matches, best_opr_match_map, {**oper_match_map, **inherited_oper_map})
         misplaced_oper_match_map.update(new_matched_opers)
         miss_opr_list.extend(new_miss_inst_opers)
 
         logger.info("finished compare operations method\n")
-        return oper_match_map, misplaced_oper_match_map, miss_opr_list
+        return oper_match_map, inherited_oper_map, misplaced_oper_match_map, miss_opr_list
 
     #Algorithm 2 Compare attributes and operations in InstructorModel with StudentModel
     #1: procedure COMPARECONTENT(InstructorModel,StudentModel, classMatchMap)
     @staticmethod
-    def compare_class_content(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], List[UMLAttribute], Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], List[UMLOperation]]:
+    def compare_class_content(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], Dict[UMLAttribute, UMLAttribute], List[UMLAttribute], Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], Dict[UMLOperation, UMLOperation], List[UMLOperation]]:
         logger.info("starting compare content method")
 
         # WARNING: if stud_class mapped to multiple inst_classes -> problem
@@ -282,7 +298,7 @@ class ClassComperator:
         stud_att_list: List[UMLAttribute] = student_model.attribute_list
 
         #4 - #14
-        attr_match_map, misplaced_attr_map, miss_attr_list = ClassComperator.compare_attributes(inst_att_list, stud_att_list, class_match_map, reversed_class_match_map, grade_model)
+        attr_match_map, inherited_attr_map, misplaced_attr_map, miss_attr_list = ClassComperator.compare_attributes(inst_att_list, stud_att_list, class_match_map, reversed_class_match_map, grade_model)
 
         #15: instList← InstructorModel.getOperation()
         inst_opr_list: List[UMLOperation] = instructor_model.operation_list
@@ -291,11 +307,11 @@ class ClassComperator:
         stud_opr_list: List[UMLOperation] = student_model.operation_list
 
         #17 - #28
-        oper_matched_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_operations(inst_opr_list, stud_opr_list, class_match_map, reversed_class_match_map, grade_model)
+        oper_matched_map, inherited_oper_map, misplaced_oper_map, miss_oper_list = ClassComperator.compare_operations(inst_opr_list, stud_opr_list, class_match_map, reversed_class_match_map, grade_model)
 
         logger.info("finished compare content method")
         #29: return matchedAttrMap, misplaceAttrMap, matchedOperMap, misplaceOperMap
-        return attr_match_map, misplaced_attr_map, miss_attr_list, oper_matched_map, misplaced_oper_map, miss_oper_list
+        return attr_match_map, inherited_attr_map, misplaced_attr_map, miss_attr_list, oper_matched_map, inherited_oper_map, misplaced_oper_map, miss_oper_list
 
     #Algorithm 3 Check whether a class is split into two classes
     #1: procedure CLASSSPLITMATCH(InstructorModel, StudentModel)
@@ -313,7 +329,6 @@ class ClassComperator:
         for cs0 in stud_list:
             for cs1 in stud_list:
                 #4: if Cs0 and Cs1 has 1-to-multiple association then
-                # TODO: find out if this is only correct for associations or also for other relations
                 if cs0 != cs1 and any(rel for rel in cs1.relations if rel.type == UMLRelationType.ASSOCIATION and rel.destination == cs0 and rel.s_multiplicity == "1" and rel.d_multiplicity == "*"):
                     #5: for all Class Ci in instList do
                     for ci in inst_list:
@@ -343,7 +358,6 @@ class ClassComperator:
             for ci2 in instructor_model.class_list:
                 if ContentCheck.class_contains_missplaced_properties(ci2, cs, misplaced_attr_map, misplaced_oper_map):
                     #4: if Ci1 has association with Ci2 then
-                    # TODO: find out if this is only correct for associations or also for other relations
                     if any(rel for rel in ci1.relations if rel.destination == ci2 and rel.source == ci1 and rel.type == UMLRelationType.ASSOCIATION):
                         #5: mergeClassMap.put(Cs,<Ci1,Ci2>)
                         merge_class_map[(ci1, ci2)] = cs
@@ -352,5 +366,3 @@ class ClassComperator:
         logger.info("finished class merge match method\n")
         #7:return mergeClassMap
         return merge_class_map
-    
-    #TODO: test new methods (3, 4)

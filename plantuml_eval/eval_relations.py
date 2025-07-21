@@ -22,13 +22,13 @@ class RelationComperator:
     #Algorithm 5 Compare association in InstructorModel and StudentModel 
     #1: procedure COMPAREASSOC(InstructorModel, StudentModel,missClassList) 
     @staticmethod
-    def compare_relations(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass], miss_inst_class_list: List[UMLClass], enum_match_map: Dict[UMLEnum, UMLEnum], inst_enum_miss_list: List[UMLEnum], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLRelation, UMLRelation], Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]], Dict[Tuple[UMLClass, UMLClass],UMLRelation], Dict[Tuple[UMLRelation, UMLRelation], UMLRelation], Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]], List[UMLRelation]]:
+    def compare_relations(instructor_model: UMLModel, student_model: UMLModel, class_match_map: Dict[UMLClass, UMLClass], miss_inst_class_list: List[UMLClass], enum_match_map: Dict[UMLEnum, UMLEnum], inst_enum_miss_list: List[UMLEnum], grade_model: Optional[GradeModel] = None) -> Tuple[Dict[UMLRelation, UMLRelation], Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]], Dict[Tuple[UMLRelation, UMLRelation],UMLRelation], Dict[Tuple[UMLRelation, UMLRelation], UMLRelation], Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]], List[UMLRelation], List[UMLRelation]]:
         # NOTE: this algorithm is extended to also match relations between classes and enums
         logger.debug("Starting relation comparison")
         # variables for returning
         relation_match_map: Dict[UMLRelation, UMLRelation] = {}
         inst_assoc_link_match_map: Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]] = {}
-        stud_assoc_link_match_map: Dict[Tuple[UMLClass, UMLClass], UMLRelation] = {}
+        stud_assoc_link_match_map: Dict[Tuple[UMLRelation, UMLRelation], UMLRelation] = {}
         sec_derivation_inst_map: Dict[Tuple[UMLRelation, UMLRelation], UMLRelation] = {}
         sec_derivation_stud_map: Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]] = {}
         miss_relation_list: List[UMLRelation] = []
@@ -60,10 +60,13 @@ class RelationComperator:
             possible_relation_map[ri] = []
             for rs in stud_relation_list:
                 #5: if Ai and As connect two pairs of matched classes then 
-                if ((ri.source, rs.source) in element_match_map.items() and (ri.destination, rs.destination) in element_match_map.items()) or ((ri.source, rs.destination) in element_match_map.items() and (ri.destination, rs.source) in element_match_map.items()):
+                if (ri.source, rs.source) in element_match_map.items() and (ri.destination, rs.destination) in element_match_map.items():
                     logger.debug(f"Possible relation match found: {ri} with {rs}")
                     #6: associationMatchMap.put(As, Ai) 
                     possible_relation_map[ri].append(rs)
+                elif (ri.source, rs.destination) in element_match_map.items() and (ri.destination, rs.source) in element_match_map.items():
+                    logger.debug(f"Possible relation match found: {ri} with {rs} (reversed)")
+                    possible_relation_map[ri].append(rs.swap_source_destination())
 
         #**added additionally**
         safe_relation_matches, best_relation_match_map = EvalHelper.handle_possible_matches(possible_relation_map, grade_model, element_match_map)
@@ -92,7 +95,7 @@ class RelationComperator:
                             break
                     if rs_1 and rs_2:
                         inst_assoc_link_match_map[ri] = (rs_1, rs_2)
-                        logger.debug(f"Association link match found: {ri} with classes {rs_1} and {rs_2}")
+                        logger.debug(f"Association link match found: {str(ri)} with relations {str(rs_1)} and {str(rs_2)}")
 
         student_miss_relations = [rel for rel in student_model.relation_list if rel not in relation_match_map.values()]
         for rs in student_miss_relations:
@@ -111,7 +114,7 @@ class RelationComperator:
                             break
                     if ri_1 and ri_2:
                         stud_assoc_link_match_map[(ri_1, ri_2)] = rs
-                        logger.debug(f"Association link match found: {rs} with classes {ri_1} and {ri_2}")
+                        logger.debug(f"Association link match found: {str(rs)} with relations {str(ri_1)} and {str(ri_2)}")
 
         logger.debug(f"{len(inst_assoc_link_match_map)} association link matches found in instructor model")
         logger.debug(f"{len(stud_assoc_link_match_map)} association link matches found in student model")
@@ -192,11 +195,11 @@ class RelationComperator:
                                     sec_derivation_stud_map[ri] = (rel_1, rel_2)
                                     logger.debug(f"Second degree derivation found: {str(ri)} for relations {str(rel_1)} and {str(rel_2)}")
 
-        miss_relation_list = [
+        miss_relation_list_loose = [
             rel for rel in miss_relation_list
             if not relation_match_map.get(rel)
             and not inst_assoc_link_match_map.get(rel)
-            #and not any(k.destination == rel for k in inst_assoc_link_match_map.keys())
+            and not any(k.destination == rel for k in inst_assoc_link_match_map.keys())
             and not any(k[0] == rel for k in stud_assoc_link_match_map.keys())
             and not any(k[1] == rel for k in stud_assoc_link_match_map.keys())
             and not any(k[0] == rel for k in sec_derivation_inst_map.keys())
@@ -206,5 +209,5 @@ class RelationComperator:
         logger.info(f"Relation comparison complete: {len(relation_match_map)} matches found, {len(sec_derivation_inst_map) + len(sec_derivation_stud_map)} derivations found, {len(miss_relation_list)} missing relations found")
         logger.info("finished compare relations method\n")
         #17: return associationMatchMap, derivationList
-        return relation_match_map, inst_assoc_link_match_map, stud_assoc_link_match_map, sec_derivation_inst_map, sec_derivation_stud_map, miss_relation_list
+        return relation_match_map, inst_assoc_link_match_map, stud_assoc_link_match_map, sec_derivation_inst_map, sec_derivation_stud_map, miss_relation_list, miss_relation_list_loose
         # TODO: find best matches for second degree derivations, alternative association links

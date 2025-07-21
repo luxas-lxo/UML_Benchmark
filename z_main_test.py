@@ -1,7 +1,7 @@
 from UML_model.uml_model import UMLModel
 from grading.grade_metamodel import GradeModel
 from plantuml_eval.eval_model import EvalModel
-from main_eval.eval_criteria import EvalHandler
+from main_eval.eval_handler import EvalHandler
 
 plant_uml_inst = "@startuml \nclass square { \nfile \nrank \n} \nclass move \nclass position { \n/check \n/checkmate \n/stalemate \nexecuteMove() \ncapturePiece() \n} \nclass piece \nenum color { \nBLACK \nWHITE \n} \nenum type as \"type of piece\" { \nPAWN \nKNIGHT \nBISHOP \nROOK \nQUEEN \nKING \n} \n} \nsquare \"*\" -- \"*\" square : \"from / to\" \n(square, square) .. move \nposition \"*\" -- \"*\" piece \n(position, piece) .. square \nposition \" \" -- \"1\" color:  \"whoseTurn\" \nposition \" \" -- \"0..*\" move: \"legalMoves\" \nmove \" \" o-- \"0..1\" type: \"transformed\" \npiece \" \" o-- \"1\" color: \"color\" \npiece \" \" o-- \"1\" type: \"type\" \n@enduml"
 instructor_model = UMLModel(plant_uml_inst)
@@ -29,8 +29,10 @@ grade_model_ss2015.add_relation_grade_structure(instructor_model.relation_lookup
 eval_model = EvalModel(instructor_model, student_model, grade_model_ss2015)
 print(repr(eval_model))
 
+
 eval_handler = EvalHandler(eval_model)
 print(repr(eval_handler))
+
 
 #TODO: restructure metrics
 #TODO: add outpu file
@@ -39,5 +41,4 @@ print(repr(eval_handler))
 #TODO add missplaced/alternative stuff to semantic evaluator
 #TODO: move get_numbers_or_stars_from_multiplicity() to PlantUML parser or relation class
 #TODO: add weight to metrics
-#TODO in eval attribute and operation use seperate maps for inheritance atts und opps
 #TODO: test relations

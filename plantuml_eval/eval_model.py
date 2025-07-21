@@ -34,26 +34,38 @@ class EvalModel:
 
         # Algorithm 2: Compare class content in InstructorModel and StudentModel
         compare_class_content = ClassComperator.compare_class_content(self.instructor_model, self.student_model, self.class_match_map, self.grade_model)
+
         self.attr_match_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[0]
         self.attr_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.attr_match_map.items()}
-        self.misplaced_attr_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[1]
+        self.inherited_attr_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[1]
+        self.inherited_attr_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.inherited_attr_map.items()}
+        self.misplaced_attr_map: Dict[UMLAttribute, UMLAttribute] = compare_class_content[2]
         self.misplaced_attr_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_attr_map.items()}
-        self.missed_attr_list: List[Tuple[UMLClass, UMLAttribute]] = compare_class_content[2]
+        self.missed_attr_list: List[UMLAttribute] = compare_class_content[3]
         self.missed_attr_list_str: List[str] = [f"{str(attr)}" for attr in self.missed_attr_list]
-        self.oper_matched_map: Dict[UMLOperation, UMLOperation] = compare_class_content[3]
+
+        # **adeded additionally**
+        self.temp_all_att_matches: Dict[UMLAttribute, UMLAttribute] = {**self.attr_match_map, **self.inherited_attr_map, **self.misplaced_attr_map}
+
+        self.oper_matched_map: Dict[UMLOperation, UMLOperation] = compare_class_content[4]
         self.oper_matched_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.oper_matched_map.items()}
-        self.misplaced_oper_map: Dict[UMLOperation, UMLOperation] = compare_class_content[4]
+        self.inherited_oper_map: Dict[UMLOperation, UMLOperation] = compare_class_content[5]
+        self.inherited_oper_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.inherited_oper_map.items()}
+        self.misplaced_oper_map: Dict[UMLOperation, UMLOperation] = compare_class_content[6]
         self.misplaced_oper_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.misplaced_oper_map.items()}
-        self.missed_oper_list: List[Tuple[UMLClass, UMLOperation]] = compare_class_content[5]
+        self.missed_oper_list: List[UMLOperation] = compare_class_content[7]
         self.missed_oper_list_str: List[str] = [f"{str(op)}" for op in self.missed_oper_list]
 
+        # **adeded additionally**
+        self.temp_all_oper_matches: Dict[UMLOperation, UMLOperation] = {**self.oper_matched_map, **self.inherited_oper_map, **self.misplaced_oper_map}
+
         # Algorithm 3: Find split classes in InstructorModel and StudentModel
-        self.split_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map, self.misplaced_attr_map, self.oper_matched_map, self.misplaced_oper_map)
+        self.split_class_map: Dict[UMLClass, Tuple[UMLClass, UMLClass]] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map, self.misplaced_attr_map, self.oper_matched_map, self.misplaced_oper_map)
         self.split_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.split_class_map.items()}
 
         # Algorithm 4: Find merged classes in InstructorModel and StudentModel
-        self.merge_class_map: Dict[UMLClass, UMLClass] = ClassComperator.class_merge_match(self.instructor_model, self.class_match_map, self.misplaced_attr_map, self.misplaced_oper_map)
-        self.merge_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.merge_class_map.items()}
+        self.merge_class_map: Dict[Tuple[UMLClass, UMLClass], UMLClass] = ClassComperator.class_merge_match(self.instructor_model, self.class_match_map, self.misplaced_attr_map, self.misplaced_oper_map)
+        self.merge_class_map_str: Dict[Tuple[str, str], str] = {(str(k[0]), str(k[1])): str(v) for k, v in self.merge_class_map.items()}
 
         # **adeded additionally**
         # NOTE: maybe update the missing list in Algorithm 3 and 4
@@ -62,8 +74,8 @@ class EvalModel:
             if (
                 cls not in self.split_class_map.keys() and
                 not any(
-                    cls == split_cls_1 or cls == split_cls_2
-                    for split_cls_1, split_cls_2 in self.split_class_map.keys()
+                    cls == merge_cls_1 or cls == merge_cls_2
+                    for merge_cls_1, merge_cls_2 in self.merge_class_map.keys()
                 )
             )
         ]
@@ -83,13 +95,16 @@ class EvalModel:
         self.missed_value_list: List[UMLValue] = compare_enums[5]
         self.missed_value_list_str: List[str] = [f"{str(value)} in {str(value.reference)}" for value in self.missed_value_list]
 
+        # **adeded additionally**
+        self.temp_all_value_matches: Dict[UMLValue, UMLValue] = {**self.value_match_map, **self.misplaced_value_map}
+
         # Algorithm 5: Compare association in InstructorModel and StudentModel
         compare_relations = RelationComperator.compare_relations(self.instructor_model, self.student_model, self.class_match_map, self.missing_classes, self.enum_match_map, self.missing_enums)
         self.relation_match_map: Dict[UMLRelation, UMLRelation] = compare_relations[0]
         self.relation_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.relation_match_map.items()}
-        self.inst_assoc_link_match_map: Dict[UMLRelation, Tuple[UMLClass, UMLClass]] = compare_relations[1]
+        self.inst_assoc_link_match_map: Dict[UMLRelation, Tuple[UMLRelation, UMLRelation]] = compare_relations[1]
         self.inst_assoc_link_match_map_str: Dict[str, Tuple[str, str]] = {str(k): (str(v[0]), str(v[1])) for k, v in self.inst_assoc_link_match_map.items()}
-        self.stud_assoc_link_match_map: Dict[Tuple[UMLClass, UMLClass], UMLRelation] = compare_relations[2]
+        self.stud_assoc_link_match_map: Dict[Tuple[UMLRelation, UMLRelation], UMLRelation] = compare_relations[2]
         self.stud_assoc_link_match_map_str: Dict[Tuple[str, str], str] = {(str(k[0]), str(k[1])): str(v) for k, v in self.stud_assoc_link_match_map.items()}
         self.sec_derivation_inst_map: Dict[Tuple[UMLRelation, UMLRelation], UMLRelation] = compare_relations[3]
         self.sec_derivation_inst_map_str: Dict[Tuple[str, str], str] = {(str(k[0]), str(k[1])): str(v) for k, v in self.sec_derivation_inst_map.items()}
@@ -97,8 +112,8 @@ class EvalModel:
         self.sec_derivation_stud_map_str: Dict[str, Tuple[str, str]] = {str(k): (str(v[0]), str(v[1])) for k, v in self.sec_derivation_stud_map.items()}
         self.miss_relation_list: List[UMLRelation] = compare_relations[5]
         self.miss_relation_list_str: List[str] = [str(rel) for rel in self.miss_relation_list]
-
-
+        self.miss_relation_list_loose: List[UMLRelation] = compare_relations[6]
+        self.miss_relation_list_loose_str: List[str] = [str(rel) for rel in self.miss_relation_list_loose]
 
     def print_grade_model(self):
         if self.grade_model:
@@ -196,12 +211,16 @@ class EvalModel:
         output.append("\nAlgorithm 2: Compare Class Content")
         output.append("\tAttribute Matches:")
         output.append(f"\t{self.attr_match_map_str}")
+        output.append("\tInherited Attributes:")
+        output.append(f"\t{self.inherited_attr_map_str}")
         output.append("\tMisplaced Attributes:")
         output.append(f"\t{self.misplaced_attr_map_str}")
         output.append("\tMissed Attributes:")
         output.append(f"\t{self.missed_attr_list_str}")
         output.append("\tOperation Matches:")
         output.append(f"\t{self.oper_matched_map_str}")
+        output.append("\tInherited Operations:")
+        output.append(f"\t{self.inherited_oper_map_str}")
         output.append("\tMisplaced Operations:")
         output.append(f"\t{self.misplaced_oper_map_str}")
         output.append("\tMissed Operations:")
@@ -240,6 +259,8 @@ class EvalModel:
         output.append(f"\t{self.sec_derivation_stud_map_str}")
         output.append("\tMissing Relations:")
         output.append(f"\t{self.miss_relation_list_str}")
+        output.append("\tLoose Missing Relations:")
+        output.append(f"\t{self.miss_relation_list_loose_str}")
         return "\n".join(output)
     
     def __str__(self):

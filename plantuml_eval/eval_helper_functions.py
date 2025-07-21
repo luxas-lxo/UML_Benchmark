@@ -69,8 +69,12 @@ class EvalHelper:
                     score = grade_model.temp_grade_class(match, elem)[0]  # Score ∈ [0, 1]
                     logger.debug(f"Grading class {elem.name} against {match.name}: score = {score}")
                 elif isinstance(elem, UMLAttribute) or isinstance(elem, UMLOperation):
-                    score = grade_model.temp_grade_class_content(match, elem)[0]
-                    logger.debug(f"Grading content element {elem.name} against {match.name}: score = {score}")
+                    if element_match_map is None:
+                        score = grade_model.temp_grade_class_content(match, elem)[0]
+                        logger.debug(f"Grading content element {elem.name} against {match.name}: score = {score}")
+                    else:
+                        score = grade_model.temp_grade_class_content(match, elem, element_match_map)[0]
+                        logger.debug(f"Grading content element {elem.name} against {match.name} with element match map: score = {score}")
                 elif isinstance(elem, UMLEnum):
                     score = grade_model.temp_grade_enum(match, elem)[0]
                     logger.debug(f"Grading enum {elem.name} against {match.name}: score = {score}")

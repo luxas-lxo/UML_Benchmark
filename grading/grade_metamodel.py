@@ -165,7 +165,7 @@ class GradeModel:
         grade_relation.points += relation_structure_points
         self.total_points += relation_structure_points
 
-    def grade_attribute(self, st_feature: StructuralFeature, att: UMLAttribute) -> float:
+    def grade_attribute(self, st_feature: StructuralFeature, att: UMLAttribute, class_match_map: Optional[Dict[UMLClass, UMLClass]] = None) -> float:
         # attribute found -> 1/2 points
         temp_grade: float = st_feature.points / 2
         temp_content_grade: float = 0.0
@@ -175,7 +175,14 @@ class GradeModel:
                 # structural match for e.g data type == data type
                 temp_content_grade += 1
         # structural match normalized -> 1/2 points
-        temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
+        if class_match_map:
+            if class_match_map.get(st_feature.reference.reference) != att.reference:
+                # NOTE: the +1 here symbolizes that the attribute was inherited 
+                temp_grade += (temp_content_grade / (len(content_check) + 1)) * (st_feature.points / 2)
+            else:
+                temp_grade += ((temp_content_grade + 1) / (len(content_check) + 1)) * (st_feature.points / 2)
+        else:
+            temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
         logger.debug(f"Grade for attribute '{att.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")
         return temp_grade
     
@@ -206,7 +213,7 @@ class GradeModel:
         logger.debug(f"Grade for relation '{rel.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")
         return temp_grade
 
-    def temp_grade_st_element(self, st_feature: StructuralFeature, stud_class_element_list: Optional[List[GradeReference]] = None, stud_element: Optional[UMLElement] = None) -> float:
+    def temp_grade_st_element(self, st_feature: StructuralFeature, stud_class_element_list: Optional[List[GradeReference]] = None, stud_element: Optional[UMLElement] = None, class_match_map: Optional[Dict[UMLClass, UMLClass]] = None) -> float:
         temp_grade: float = 0.0
         if stud_class_element_list:
             all_temp_grades: List[float] = []
@@ -221,9 +228,9 @@ class GradeModel:
             temp_grade = max(all_temp_grades) if all_temp_grades else 0.0
         elif stud_element:
             if isinstance(stud_element, UMLAttribute):
-                temp_grade += self.grade_attribute(st_feature, stud_element)
+                temp_grade += self.grade_attribute(st_feature, stud_element, class_match_map)
             elif isinstance(stud_element, UMLOperation):
-                temp_grade += self.grade_operation(st_feature, stud_element)
+                temp_grade += self.grade_operation(st_feature, stud_element, class_match_map)
             else:
                 logger.warning(f"Unsupported element type for grading: {type(stud_element)}")
         return temp_grade
@@ -248,7 +255,7 @@ class GradeModel:
                 return NotImplemented
         return (temp_grade / grade_class.points if grade_class.points > 0 else 0.0, temp_grade)
     
-    def temp_grade_class_content(self, stud_content: GradeReference, mapped_inst_content: GradeReference) -> Tuple[float, float]:
+    def temp_grade_class_content(self, stud_content: GradeReference, mapped_inst_content: GradeReference, class_match_map: Optional[Dict[UMLClass, UMLClass]] = None) -> Tuple[float, float]:
         temp_grade: float = 0.0
         grade_class: GradeObject = next((cls for cls in self.classes if cls.element == mapped_inst_content.reference), None)
         if not grade_class:
@@ -257,13 +264,13 @@ class GradeModel:
             # attribute content grading
             for st_feature in grade_class.st_features:
                 if st_feature.type == FeatureType.ATTRIBUTE and st_feature.reference == mapped_inst_content:
-                    temp_grade += self.temp_grade_st_element(st_feature=st_feature, stud_element=stud_content)
+                    temp_grade += self.temp_grade_st_element(st_feature=st_feature, stud_element=stud_content, class_match_map=class_match_map)
                     break
         elif isinstance(mapped_inst_content, UMLOperation):
             # operation content grading
             for st_feature in grade_class.st_features:
                 if st_feature.type == FeatureType.OPERATION and st_feature.reference == mapped_inst_content:
-                    temp_grade += self.temp_grade_st_element(st_feature=st_feature, stud_element=stud_content)
+                    temp_grade += self.temp_grade_st_element(st_feature=st_feature, stud_element=stud_content, class_match_map=class_match_map)
                     break
         return (temp_grade / st_feature.points if st_feature.points > 0 else 0.0, temp_grade)
     
