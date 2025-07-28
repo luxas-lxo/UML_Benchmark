@@ -174,3 +174,13 @@ class UMLRelation(UMLElement, GradeReference):
             if self.d_multiplicity == stud_relation.s_multiplicity:
                 matches["d_multiplicity"] = True
         return matches
+    
+    def copy(self) -> 'UMLRelation':
+        return UMLRelation(
+            type=self.type,
+            source=self.source,
+            destination=self.destination,
+            s_multiplicity=self.s_multiplicity,
+            d_multiplicity=self.d_multiplicity,
+            description=self.description
+        )

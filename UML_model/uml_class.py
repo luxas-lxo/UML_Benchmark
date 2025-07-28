@@ -5,6 +5,7 @@ from grading.grade_reference import GradeReference
 from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import textwrap
+import re
 import shutil
 import logging
 
@@ -84,28 +85,31 @@ class UMLVisibility(Enum):
 
 class UMLAttribute(GradeReference):
     # NOTE: add other specifications if needed (e.g. multiplicity constraints or modifier)
-    def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisibility = UMLVisibility.UNKNOWN, derived: bool = False):
+    def __init__(self, name: str, data_type: UMLDataType = UMLDataType.UNKNOWN, initial: str = "", visibility: UMLVisibility = UMLVisibility.UNKNOWN, derived: bool = False, multiplicity: str = ""):
         self.name: str = name
         self.data_type: UMLDataType = data_type
         self.initial: str = initial
         self.visibility: UMLVisibility = visibility
         self.derived: bool = derived
         self.reference: Optional[UMLClass] = None
-    
+        self.multiplicity: str = UMLAttribute.normalize_multiplicity(multiplicity)
+
     def __repr__(self): 
-        return f"UMLAttribute({('/' if self.derived else '') + self.name}): visability {self.visibility.name}, datatype {self.data_type.name}, initial {'= ' + self.initial if self.initial else 'None'}"
+        return f"UMLAttribute({('/' if self.derived else '') + self.name}): {'multiplicity ' + self.multiplicity if self.multiplicity != '1' else ''}visibility {self.visibility.name}, datatype {self.data_type.name}, initial {'= ' + self.initial if self.initial else 'None'}"
 
     def __str__(self):
         return f"UMLAttribute({self.name})"
     
     def to_plantuml(self) -> str:
         name_part = ('/' if self.derived else '') + self.name
+        mult_part = (' [' + self.multiplicity + '] ' if self.multiplicity and self.multiplicity != '1' else '') 
         type_part = ''
         if self.data_type != UMLDataType.UNKNOWN and self.data_type != UMLDataType.ERROR:
             type_part = ': ' + self.data_type.value
         if self.initial != '' and self.initial != '--error--':
             type_part += ' = ' + self.initial
-        return f"{self.visibility.value if self.visibility.value != "error" else ""}{name_part}{type_part}"
+        vis_part = "" if self.visibility == UMLVisibility.ERROR else self.visibility.value
+        return f"{vis_part}{name_part}{mult_part}{type_part}"
 
     def __hash__(self):
         return hash((self.name, self.data_type, self.initial, self.visibility, self.derived))
@@ -119,6 +123,16 @@ class UMLAttribute(GradeReference):
             self.initial == other.initial and
             self.visibility == other.visibility and
             self.derived == other.derived
+        )
+    
+    def copy(self) -> 'UMLAttribute':
+        return UMLAttribute(
+            name=self.name,
+            data_type=self.data_type,
+            initial=self.initial,
+            visibility=self.visibility,
+            derived=self.derived,
+            multiplicity=self.multiplicity
         )
     
     def compare_content_to_student(self, student_attribute: 'UMLAttribute') -> Dict[str, bool]:
@@ -138,6 +152,26 @@ class UMLAttribute(GradeReference):
         if self.derived == student_attribute.derived:
             matches["derived"] = True
         return matches
+    
+    @staticmethod
+    def normalize_multiplicity(multiplicity: str) -> str:
+        # Remove all whitespaces
+        multiplicity = multiplicity.replace(" ", "")
+        # Remove enclosing [] or ()
+        if (multiplicity.startswith("[") and multiplicity.endswith("]")) or (multiplicity.startswith("(") and multiplicity.endswith(")")):
+            multiplicity = multiplicity[1:-1]
+        # If multiplicity is in the form "x..x" or "*..*", normalize to "x" or "*"
+        match = re.match(r'^([*\d]+)\.\.([*\d]+)$', multiplicity)
+        if match:
+            first, last = match.groups()
+            if first == last:
+                multiplicity = first
+        # Normalize common forms not captured by regex
+        if multiplicity == "0..*":
+            multiplicity = "*"
+        if multiplicity == "":
+            multiplicity = "1"
+        return multiplicity
 
 class UMLOperation(GradeReference):
     # NOTE: add other specifications if needed (e.g. modifier)
@@ -185,6 +219,14 @@ class UMLOperation(GradeReference):
         if self.params == student_operation.params:
             matches["params"] = True
         return matches
+    
+    def copy(self) -> 'UMLOperation':
+        return UMLOperation(
+            name=self.name,
+            params=self.params.copy(),
+            return_types=self.return_types.copy(),
+            visibility=self.visibility
+        )
 
 class UMLClass(UMLElement, GradeReference):
     def __init__(self, name: str, attributes: Optional[List[UMLAttribute]] = None, operations: Optional[List[UMLOperation]] = None):
@@ -192,8 +234,9 @@ class UMLClass(UMLElement, GradeReference):
         self.attributes: List[UMLAttribute] = attributes if attributes is not None else []
         self.operations: List[UMLOperation] = operations if operations is not None else []
         self.relations: List[UMLRelation] = []
-        self.super_class: Optional[UMLClass] = None 
-        UMLClass.assign_content_reference(self)
+        self.super_class: Optional[UMLClass] = None
+        self.sub_classes: List[UMLClass] = []
+        self.assign_content_reference()
 
 
     def __repr__(self): 
@@ -230,7 +273,15 @@ class UMLClass(UMLElement, GradeReference):
     def add_relation(self, relation: UMLRelation):
         if relation not in self.relations:
             self.relations.append(relation)
-    
+
+    def assign_super_class(self, super_class: 'UMLClass') -> None:
+        self.super_class = super_class
+
+    def add_sub_class(self, sub_class: 'UMLClass') -> None:
+        if sub_class not in self.sub_classes:
+            self.sub_classes.append(sub_class)
+            sub_class.assign_super_class(self)
+
     def get_relation_ends(self) -> List['UMLClass']:
         ends: List[UMLClass] = []
         for rel in self.relations:
@@ -302,6 +353,13 @@ class UMLClass(UMLElement, GradeReference):
             print(empty)
 
         print("\n")
+
+    def copy(self) -> 'UMLClass':
+        return UMLClass(
+            name=self.name,
+            attributes=[att.copy() for att in self.attributes],
+            operations=[opr.copy() for opr in self.operations]
+        )
 
     
 

@@ -79,12 +79,12 @@ class TestUMLAttribute(unittest.TestCase):
 
     def test_uml_attribute_repr_derived(self):
         # Test the __repr__ method
-        expected_repr = "UMLAttribute(/testAttributeDerived): visability PUBLIC, datatype STR, initial = default"
+        expected_repr = "UMLAttribute(/testAttributeDerived): visibility PUBLIC, datatype STR, initial = default"
         self.assertEqual(repr(self.derived_attribute), expected_repr)
 
     def test_uml_attribute_repr_no_initial(self):
         # Test the __repr__ method for non-derived attribute
-        expected_repr = "UMLAttribute(testAttributeNoInitial): visability PUBLIC, datatype STR, initial None"
+        expected_repr = "UMLAttribute(testAttributeNoInitial): visibility PUBLIC, datatype STR, initial None"
         self.assertEqual(repr(self.no_initial_attribute), expected_repr)
 
     def test_uml_attribute_str(self):

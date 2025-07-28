@@ -9,8 +9,7 @@ import textwrap
 import shutil
 
 class UMLModel:
-    def __init__(self, plantuml_str: str = None, class_list: List[UMLClass] = None,
-                 enum_list: List[UMLEnum] = None, relation_list: List[UMLRelation] = None):
+    def __init__(self, plantuml_str: str = None, class_list: List[UMLClass] = None, enum_list: List[UMLEnum] = None, relation_list: List[UMLRelation] = None):
         
         if plantuml_str:
             self.class_list: List[UMLClass] = UMLParser.parse_plantuml_classes(plantuml_str)
@@ -71,6 +70,9 @@ class UMLModel:
         for relation in self.relation_list:
             if isinstance(relation.source, UMLElement) and isinstance(relation.destination, UMLElement):
                 UMLModel.find_element(self, relation.source.name).add_relation(relation)
+                if isinstance(relation.source, UMLClass) and isinstance(relation.destination, UMLClass) and relation.type == UMLRelationType.GENERALIZATION:
+                    relation.source.assign_super_class(relation.destination)
+                    relation.destination.add_sub_class(relation.source)
                 if not relation.directed:
                     UMLModel.find_element(self, relation.destination.name).add_relation(relation.swap_source_destination())
 
@@ -160,5 +162,13 @@ class UMLModel:
             print(wrapped)
 
         print("\n")
+
+    def copy(self):
+        return UMLModel(
+            plantuml_str=None,
+            class_list=[cls.copy() for cls in self.class_list],
+            enum_list=[enm.copy() for enm in self.enum_list],
+            relation_list=[rel.copy() for rel in self.relation_list]
+        )
 
 

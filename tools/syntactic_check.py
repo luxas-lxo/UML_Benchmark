@@ -17,6 +17,8 @@ class SyntacticCheck:
     @staticmethod
     def levenshtein_score(w1: str, w2: str):
         max_len = max(len(w1), len(w2))
+        if max_len == 0:
+            return 1.0
         distance = Levenshtein.distance(w1, w2)
         similarity = 1 - (distance / max_len)
         return similarity
@@ -66,7 +68,9 @@ class SyntacticCheck:
             if any(x < 0 for x in (start, end)):
                 logger.debug(f"Invalid multiplicity: negative value in '{multiplicity}' (start={start}, end={end})")
                 return False
-        return True
+        else:
+            logger.debug(f"Invalid multiplicity format: '{multiplicity}'")
+        return pattern_match
     
     @staticmethod
     def is_multiplicity_match_replace_high_numbers(mult_i: str, mult_s: str) -> bool:

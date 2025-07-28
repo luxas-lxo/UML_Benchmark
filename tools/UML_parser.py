@@ -14,14 +14,14 @@ logger.setLevel(logging.INFO)
 ERROR_FLAG = "--error--"
 
 class UMLParser:
-    
+    #TODO: syntax wrong visibility
     @staticmethod
     def parse_attribute(line: str) -> Optional[UMLAttribute]:
         if not line or line.strip() == "":
             return None
 
         attr_pattern = regex.compile(
-            r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)?\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$'
+            r'^\s*(?P<visibility>[+#\-~])?\s*(?P<derived>/)?(?P<name>\w+)?\s*(?:\[(?P<mult>[^\]]+)\])?\s*(?::\s*(?P<type>\w+))?\s*(?:=\s*(?P<initial>.+))?$'
         )
 
         try:
@@ -38,6 +38,14 @@ class UMLParser:
             logger.warning(f"Attribute name not specified, setting to '{ERROR_FLAG}'.")
             name = ERROR_FLAG
         derived = bool(match.group("derived"))
+
+        multiplicity = match.group("mult")
+        if multiplicity and not SyntacticCheck.is_valid_multiplicity(multiplicity):
+            logger.warning(f"Multiplicity '{multiplicity}' for attribute '{name}' is invalid, setting to '{ERROR_FLAG}'.")
+            multiplicity = ERROR_FLAG
+        elif not multiplicity:
+            multiplicity = ""
+
         vis_symbol = match.group("visibility") or ""
         visibility = UMLVisibility.from_string(vis_symbol)
 
@@ -54,7 +62,7 @@ class UMLParser:
         else:
             initial = match.group("initial").strip() if match.group("initial") else ""
 
-        return UMLAttribute(name=name, data_type=datatype, initial=initial, visibility=visibility, derived=derived)
+        return UMLAttribute(name=name, data_type=datatype, initial=initial, visibility=visibility, derived=derived, multiplicity=multiplicity)
 
     @staticmethod
     def parse_operation(line: str) -> UMLOperation:

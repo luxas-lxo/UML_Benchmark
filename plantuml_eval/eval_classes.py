@@ -8,7 +8,7 @@ from UML_model.uml_model import UMLModel
 from grading.grade_metamodel import GradeModel
 from plantuml_eval.eval_helper_functions import EvalHelper
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 import logging
 
 
@@ -316,7 +316,7 @@ class ClassComperator:
     #Algorithm 3 Check whether a class is split into two classes
     #1: procedure CLASSSPLITMATCH(InstructorModel, StudentModel)
     @staticmethod
-    def class_split_match(instructor_model: UMLModel, student_model: UMLModel, attr_match_map: Dict[UMLAttribute, UMLAttribute], misplaced_attr_map: Dict[UMLAttribute, UMLAttribute], oper_matched_map: Dict[UMLOperation, UMLOperation], misplaced_oper_map: Dict[UMLOperation, UMLOperation]) -> Dict[UMLClass, Tuple[UMLClass, UMLClass]]:
+    def class_split_match(instructor_model: UMLModel, student_model: UMLModel, attr_match_map: Dict[UMLAttribute, UMLAttribute], inherited_attr_map: Dict[UMLAttribute, UMLAttribute], misplaced_attr_map: Dict[UMLAttribute, UMLAttribute], oper_matched_map: Dict[UMLOperation, UMLOperation], inherited_oper_map: Dict[UMLOperation, UMLOperation], misplaced_oper_map: Dict[UMLOperation, UMLOperation]) -> Dict[UMLClass, Tuple[UMLClass, UMLClass]]:
         logger.info("starting class split match method")
         split_class_map: Dict[UMLClass, Tuple[UMLClass, UMLClass]] = {}
 
@@ -333,12 +333,11 @@ class ClassComperator:
                     #5: for all Class Ci in instList do
                     for ci in inst_list:
                         #6: if Ci has same properties with Cs0 and Cs1 then
-                        # NOTE: the checks within the method could be done earlier to exclude classes that are not relevant for the split check
-                        # but we decided to keep the structure of the algorithm as it is
-                        if ContentCheck.classes_have_same_properties(ci, cs0, cs1, attr_match_map, misplaced_attr_map, oper_matched_map, misplaced_oper_map):
+                        if ContentCheck.classes_have_same_properties(ci, cs0, cs1, attr_match_map, inherited_attr_map, misplaced_attr_map, oper_matched_map, inherited_oper_map, misplaced_oper_map):
                             #7: splitClassMap.put(Ci, <Cs0,Cs1>)
                             split_class_map[ci] = (cs0, cs1)
-                            break  # found a match, no need to continue checking other classes
+                            # found a match, no need to continue checking other classes
+                            break  
         logger.info(f"found {len(split_class_map)} class splits")
         logger.debug(f"split class map: { {str(k): str(v) for k, v in split_class_map.items()} }")
         logger.info("finished class split match method\n")
@@ -356,11 +355,13 @@ class ClassComperator:
         for ci1, cs in class_match_map.items():
             #3: for all Class Ci2 in InstructorModel which content is misplaced in Cs do
             for ci2 in instructor_model.class_list:
-                if ContentCheck.class_contains_missplaced_properties(ci2, cs, misplaced_attr_map, misplaced_oper_map):
+                # NOTE: we restrict the search to classes that are not already matched since if they were matched, it would be more a split than a true merge
+                if ci2 not in class_match_map.keys() and ContentCheck.class_contains_misplaced_properties(ci2, cs, misplaced_attr_map, misplaced_oper_map):
                     #4: if Ci1 has association with Ci2 then
                     if any(rel for rel in ci1.relations if rel.destination == ci2 and rel.source == ci1 and rel.type == UMLRelationType.ASSOCIATION):
                         #5: mergeClassMap.put(Cs,<Ci1,Ci2>)
                         merge_class_map[(ci1, ci2)] = cs
+        # NOTE: this algorithm as of now only puts the first found class in the map, which could be not optimal
         logger.info(f"found {len(merge_class_map)} class merges")
         logger.debug(f"merge class map: { {str(k): str(v) for k, v in merge_class_map.items()} }")
         logger.info("finished class merge match method\n")

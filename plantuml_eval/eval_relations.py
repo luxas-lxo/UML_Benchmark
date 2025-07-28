@@ -106,15 +106,17 @@ class RelationComperator:
                 inst_assoc_class = reversed_element_match_map.get(rs.source)
                 inst_ends = inst_assoc_class.get_relation_ends() if inst_assoc_class else []
                 if inst_assoc_class and inst_cls_1 in inst_ends and inst_cls_2 in inst_ends:
-                    for ri_1 in inst_relation_list:
+                    for ri_1 in miss_relation_list:
                         if ri_1.equals(UMLRelation(UMLRelationType.ASSOCIATION, inst_cls_1, inst_assoc_class)):
                             break
-                    for ri_2 in inst_relation_list:
+                    for ri_2 in miss_relation_list:
                         if ri_1 != ri_2 and ri_2.equals(UMLRelation(UMLRelationType.ASSOCIATION, inst_cls_2, inst_assoc_class)):
                             break
-                    if ri_1 and ri_2:
+                    if ri_1 and ri_2 and (ri_1 not in relation_match_map or ri_2 not in relation_match_map):
                         stud_assoc_link_match_map[(ri_1, ri_2)] = rs
                         logger.debug(f"Association link match found: {str(rs)} with relations {str(ri_1)} and {str(ri_2)}")
+        # NOTE: as of now the relevanz of stud_assoc_link_match_map is not clear
+        # we exclude this for now from the evaluation
 
         logger.debug(f"{len(inst_assoc_link_match_map)} association link matches found in instructor model")
         logger.debug(f"{len(stud_assoc_link_match_map)} association link matches found in student model")
@@ -177,13 +179,14 @@ class RelationComperator:
             for e, possible_elm_list in possible_relation_class_map.items():
                 derivation_in_stud_model[e] = derivation_in_stud_model.get(e, [])
                 if source in possible_elm_list and destination in possible_elm_list:
-                    if ri not in relation_match_map:
+                    if ri not in relation_match_map.keys() and ri not in {k[0] for k in sec_derivation_inst_map.keys()}.union({k[1] for k in sec_derivation_inst_map.keys()}):
                         derivation_in_stud_model[e].append(ri)
                         logger.debug(f"Derivation found: {str(ri)} for classes {source} and {destination}")
 
         # finds second degree derivations (i.e. an student class that is not matched as a connection between two instructor classes)
         for e, derivation in derivation_in_stud_model.items():
             for ri in derivation:
+
                 source = element_match_map.get(ri.source)
                 destination = element_match_map.get(ri.destination)
                 if source and destination:
@@ -200,8 +203,8 @@ class RelationComperator:
             if not relation_match_map.get(rel)
             and not inst_assoc_link_match_map.get(rel)
             and not any(k.destination == rel for k in inst_assoc_link_match_map.keys())
-            and not any(k[0] == rel for k in stud_assoc_link_match_map.keys())
-            and not any(k[1] == rel for k in stud_assoc_link_match_map.keys())
+            #and not any(k[0] == rel for k in stud_assoc_link_match_map.keys())
+            #and not any(k[1] == rel for k in stud_assoc_link_match_map.keys())
             and not any(k[0] == rel for k in sec_derivation_inst_map.keys())
             and not any(k[1] == rel for k in sec_derivation_inst_map.keys())
             and not sec_derivation_stud_map.get(rel)

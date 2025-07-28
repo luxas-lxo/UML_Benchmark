@@ -176,11 +176,19 @@ class GradeModel:
                 temp_content_grade += 1
         # structural match normalized -> 1/2 points
         if class_match_map:
-            if class_match_map.get(st_feature.reference.reference) != att.reference:
-                # NOTE: the +1 here symbolizes that the attribute was inherited 
-                temp_grade += (temp_content_grade / (len(content_check) + 1)) * (st_feature.points / 2)
+            # checks for the class of the attribute in addition to the attribute itself
+            # this is expressed throug the +1, +1/2, +1/4 in the grade calculation
+            if class_match_map.get(st_feature.reference.reference) == att.reference:
+                temp_grade += (temp_content_grade + 1 / (len(content_check) + 1)) * (st_feature.points / 2)
+            elif att.reference.sub_classes and class_match_map.get(st_feature.reference.reference) in att.reference.sub_classes:
+                temp_grade += ((temp_content_grade + 1/2) / (len(content_check) + 1)) * (st_feature.points / 2)
+            elif att.reference.sub_classes:
+                for sub_cls in att.reference.sub_classes:
+                    if sub_cls.sub_classes and class_match_map.get(st_feature.reference.reference) in sub_cls.sub_classes:
+                        temp_grade += ((temp_content_grade + 1/4) / (len(content_check) + 1)) * (st_feature.points / 2)
+                        break
             else:
-                temp_grade += ((temp_content_grade + 1) / (len(content_check) + 1)) * (st_feature.points / 2)
+                temp_grade += (temp_content_grade / (len(content_check) + 1)) * (st_feature.points / 2)
         else:
             temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
         logger.debug(f"Grade for attribute '{att.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")
@@ -197,11 +205,17 @@ class GradeModel:
                 temp_content_grade += 1
         # structural match normalized -> 1/2 points
         if class_match_map:
-            if class_match_map.get(st_feature.reference.reference) != opr.reference:
-                # NOTE: the +1 here symbolizes that the operation was inherited 
-                temp_grade += (temp_content_grade / (len(content_check) + 1)) * (st_feature.points / 2)
+            if class_match_map.get(st_feature.reference.reference) == opr.reference:
+                temp_grade += (temp_content_grade + 1 / (len(content_check) + 1)) * (st_feature.points / 2)
+            elif opr.reference.sub_classes and class_match_map.get(st_feature.reference.reference) in opr.reference.sub_classes:
+                temp_grade += ((temp_content_grade + 1/2) / (len(content_check) + 1)) * (st_feature.points / 2)
+            elif opr.reference.sub_classes:
+                for sub_cls in opr.reference.sub_classes:
+                    if sub_cls.sub_classes and class_match_map.get(st_feature.reference.reference) in sub_cls.sub_classes:
+                        temp_grade += ((temp_content_grade + 1/4) / (len(content_check) + 1)) * (st_feature.points / 2)
+                        break
             else:
-                temp_grade += ((temp_content_grade + 1) / (len(content_check) + 1)) * (st_feature.points / 2)
+                temp_grade += ((temp_content_grade) / (len(content_check) + 1)) * (st_feature.points / 2)
         else:
             temp_grade += (temp_content_grade / len(content_check)) * (st_feature.points / 2)
         logger.debug(f"Grade for operation '{opr.name}': {temp_grade} (content match: {temp_content_grade} / {len(content_check)})")

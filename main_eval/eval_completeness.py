@@ -28,6 +28,24 @@ class CompletenessEvaluator:
             attribute_completeness_score = (total_attributes - len(model.missed_attr_list)) / total_attributes if total_attributes > 0 else NO_STATEMENT
         criteria.score = attribute_completeness_score
         return criteria
+    
+    @staticmethod
+    def evaluate_att_derivation(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        attribute_derived_completeness_score: float = NO_STATEMENT
+        attributes_derived = [att for att in model.instructor_model.attribute_list if att.derived]
+        att_derived_match_map: Dict[UMLAttribute, UMLAttribute] = {att_i: att_s for att_i, att_s in model.temp_all_att_matches.items() if att_i in attributes_derived}
+        if attributes_derived:
+            total_attributes = len(attributes_derived)
+            score: float = total_attributes
+            for att_s in att_derived_match_map.values():
+                if not att_s.derived:
+                    score -= 1
+            for att_i in model.missed_attr_list:
+                if att_i.derived:
+                    score -= 1
+            attribute_derived_completeness_score = score / total_attributes if total_attributes > 0 else NO_STATEMENT
+        criteria.score = attribute_derived_completeness_score
+        return criteria
 
     @staticmethod
     def evaluate_att_visibility(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
@@ -45,6 +63,24 @@ class CompletenessEvaluator:
                     score -= 1
             visibility_completeness_score = score / total_attributes if total_attributes > 0 else NO_STATEMENT
         criteria.score = visibility_completeness_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_att_multiplicity(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        multiplicity_completeness_score: float = NO_STATEMENT
+        attributes_with_multiplicity = [att for att in model.instructor_model.attribute_list if att.multiplicity != "1"]
+        att_with_mul_match_map: Dict[UMLAttribute, UMLAttribute] = {att_i: att_s for att_i, att_s in model.temp_all_att_matches.items() if att_i in attributes_with_multiplicity}
+        if attributes_with_multiplicity:
+            total_attributes = len(attributes_with_multiplicity)
+            score: float = total_attributes
+            for att_s in att_with_mul_match_map.values():
+                if att_s.multiplicity == "1":
+                    score -= 1
+            for att_i in model.missed_attr_list:
+                if att_i.multiplicity != "1":
+                    score -= 1
+            multiplicity_completeness_score = score / total_attributes if total_attributes > 0 else NO_STATEMENT
+        criteria.score = multiplicity_completeness_score
         return criteria
 
     @staticmethod
@@ -131,7 +167,7 @@ class CompletenessEvaluator:
     @staticmethod
     def evaluate_op_return_types(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
         return_type_completeness_score: float = NO_STATEMENT
-        operations_with_return_types = [op for op in model.instructor_model.operation_list if op.return_types]
+        operations_with_return_types = [op for op in model.instructor_model.operation_list if op.return_types != [UMLDataType.VOID]]
         op_with_return_type_match_map: Dict[UMLOperation, UMLOperation] = {op_i: op_s for op_i, op_s in model.temp_all_oper_matches.items() if op_i in operations_with_return_types}
         if operations_with_return_types:
             total_operations = len(operations_with_return_types)

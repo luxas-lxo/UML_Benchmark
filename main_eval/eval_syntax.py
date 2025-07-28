@@ -12,10 +12,15 @@ class SyntaxEvaluator:
     @staticmethod
     def evaluate_classes(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
         class_syntax_score: float = NO_STATEMENT
-        if model.class_match_map:
-            total_classes = len(model.class_match_map)
+        all_matched_classes = (
+            set(model.class_match_map.values())
+            | {cls for classes in model.split_class_map.values() for cls in classes}
+            | set(model.merge_class_map.values())
+        )
+        if all_matched_classes:
+            total_classes = len(all_matched_classes)
             syntax_score = total_classes
-            for cls_s in model.class_match_map.values():
+            for cls_s in all_matched_classes:
                 if cls_s.name == ERROR_FLAG:
                     syntax_score -= 1
             class_syntax_score = syntax_score / total_classes if total_classes > 0 else NO_STATEMENT
@@ -111,6 +116,32 @@ class SyntaxEvaluator:
                     syntax_score -= 1
             att_visibility_syntax_score = syntax_score / total_attributes if total_attributes > 0 else NO_STATEMENT
         criteria.score = att_visibility_syntax_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_att_multiplicity(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        att_multiplicity_syntax_score: float = NO_STATEMENT
+        if model.temp_all_att_matches:
+            total_attributes = len(model.temp_all_att_matches)
+            syntax_score = total_attributes
+            for attr_s in model.temp_all_att_matches.values():
+                if attr_s.multiplicity == ERROR_FLAG:
+                    syntax_score -= 1
+            att_multiplicity_syntax_score = syntax_score / total_attributes if total_attributes > 0 else NO_STATEMENT
+        criteria.score = att_multiplicity_syntax_score
+        return criteria
+    
+    @staticmethod
+    def evaluate_att_multiplicity_global(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
+        att_multiplicity_syntax_score: float = NO_STATEMENT
+        if model.student_model.attribute_list:
+            total_attributes = len(model.student_model.attribute_list)
+            syntax_score = total_attributes
+            for attr_s in model.student_model.attribute_list:
+                if attr_s.multiplicity == ERROR_FLAG:
+                    syntax_score -= 1
+            att_multiplicity_syntax_score = syntax_score / total_attributes if total_attributes > 0 else NO_STATEMENT
+        criteria.score = att_multiplicity_syntax_score
         return criteria
     
     @staticmethod

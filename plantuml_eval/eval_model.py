@@ -1,7 +1,7 @@
 from UML_model.uml_model import UMLModel
 from UML_model.uml_class import UMLClass, UMLAttribute, UMLOperation
 from UML_model.uml_enum import UMLEnum, UMLValue
-from UML_model.uml_relation import UMLRelation
+from UML_model.uml_relation import UMLRelation, UMLRelationType
 from plantuml_eval.eval_classes import ClassComperator
 from plantuml_eval.eval_relations import RelationComperator
 from plantuml_eval.eval_enums import EnumComperator
@@ -60,7 +60,7 @@ class EvalModel:
         self.temp_all_oper_matches: Dict[UMLOperation, UMLOperation] = {**self.oper_matched_map, **self.inherited_oper_map, **self.misplaced_oper_map}
 
         # Algorithm 3: Find split classes in InstructorModel and StudentModel
-        self.split_class_map: Dict[UMLClass, Tuple[UMLClass, UMLClass]] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map, self.misplaced_attr_map, self.oper_matched_map, self.misplaced_oper_map)
+        self.split_class_map: Dict[UMLClass, Tuple[UMLClass, UMLClass]] = ClassComperator.class_split_match(self.instructor_model, self.student_model, self.attr_match_map ,self.inherited_attr_map, self.misplaced_attr_map, self.oper_matched_map, self.inherited_oper_map, self.misplaced_oper_map)
         self.split_class_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.split_class_map.items()}
 
         # Algorithm 4: Find merged classes in InstructorModel and StudentModel
@@ -86,8 +86,12 @@ class EvalModel:
         self.enum_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.enum_match_map.items()}
         self.missing_enums: List[UMLEnum] = compare_enums[1]
         self.missing_enums_str: List[str] = [str(enum) for enum in self.missing_enums]
+
+        # NOTE: those are excluded from the evaluation
         self.possible_misplaced_values: Dict[UMLValue, Union[UMLAttribute, UMLClass]] = compare_enums[2]
         self.possible_misplaced_values_str: Dict[str, str] = {str(k): str(v) for k, v in self.possible_misplaced_values.items()}
+
+        # NOTE: these are added additionally
         self.value_match_map: Dict[UMLValue, UMLValue] = compare_enums[3]
         self.value_match_map_str: Dict[str, str] = {str(k): str(v) for k, v in self.value_match_map.items()}
         self.misplaced_value_map: Dict[UMLValue, UMLValue] = compare_enums[4]
@@ -114,6 +118,9 @@ class EvalModel:
         self.miss_relation_list_str: List[str] = [str(rel) for rel in self.miss_relation_list]
         self.miss_relation_list_loose: List[UMLRelation] = compare_relations[6]
         self.miss_relation_list_loose_str: List[str] = [str(rel) for rel in self.miss_relation_list_loose]
+
+        # build the student model based on the matches
+        self.match_model: UMLModel = self.build_student_match_model()
 
     def print_grade_model(self):
         if self.grade_model:
@@ -192,6 +199,10 @@ class EvalModel:
         for missing in self.miss_relation_list:
             print(f"Missing: {str(missing)}")
 
+    def print_match_model(self):
+        print("\nMatch Model:")
+        print(self.match_model.to_plantuml())
+
     def __repr__(self):
         output = ["Evaluation Model Summary:"]
         output.append("\nInstructor Model:")
@@ -261,7 +272,87 @@ class EvalModel:
         output.append(f"\t{self.miss_relation_list_str}")
         output.append("\tLoose Missing Relations:")
         output.append(f"\t{self.miss_relation_list_loose_str}")
+
+        output.append("\nMatch Model:")
+        output.append(self.match_model.to_plantuml())
         return "\n".join(output)
     
     def __str__(self):
         return "EvalModel"
+    
+    def build_student_match_model(self) -> UMLModel:
+        student_model = self.student_model.copy()
+        matched_value_set = (
+            set(self.value_match_map.values())
+            | set(self.misplaced_value_map.values())
+        )
+        matched_enum_set = (set(self.enum_match_map.values())
+            | {val.reference for val in matched_value_set}
+        )
+        
+        matched_attr_set = (
+            set(self.attr_match_map.values())
+            | set(self.inherited_attr_map.values())
+            | set(self.misplaced_attr_map.values())
+        )
+        matched_oper_set = (
+            set(self.oper_matched_map.values())
+            | set(self.inherited_oper_map.values())
+            | set(self.misplaced_oper_map.values())
+        )
+
+        matched_class_set = (
+            set(self.class_match_map.values())
+            | {cls for classes in self.split_class_map.values() for cls in classes}
+            | set(self.merge_class_map.values())
+            | {elm.reference for elm in matched_attr_set | matched_oper_set}
+        )
+
+        matched_relation_set = (
+            set(self.relation_match_map.values())
+            | {rel for relations in self.inst_assoc_link_match_map.values() for rel in relations}
+            | set(self.stud_assoc_link_match_map.values())
+            | set(self.sec_derivation_inst_map.values())
+            | {rel for relations in self.sec_derivation_stud_map.values() for rel in relations}
+        )
+        '''
+        used_relations_in_matches = {
+            rel for cls in (matched_class_set | matched_enum_set) for rel in cls.relations
+            if rel.destination in (matched_class_set | matched_enum_set | matched_relation_set) and rel.swap_source_destination() not in matched_relation_set
+        }
+        matched_relation_set.update(used_relations_in_matches)
+        '''
+        used_classes_in_relations = {
+            cls for rel in matched_relation_set for cls in (rel.source, rel.destination)
+            if isinstance(cls, UMLClass)
+        }
+        matched_class_set.update(used_classes_in_relations)
+
+        used_enums_in_relations = {
+            enum for rel in matched_relation_set for enum in (rel.source, rel.destination)
+            if isinstance(enum, UMLEnum)
+        }
+        matched_enum_set.update(used_enums_in_relations)
+
+        filtered_class_list = []
+        for cls in student_model.class_list[:]:
+            if cls in matched_class_set:
+                cls.attributes = [attr for attr in cls.attributes if attr in matched_attr_set]
+                cls.operations = [oper for oper in cls.operations if oper in matched_oper_set]
+                cls.assign_content_reference()
+                # NOTE: those will be reassigned later
+                cls.relations = []
+                cls.super_class = None
+                cls.sub_classes = []
+                filtered_class_list.append(cls)
+        # Safely remove enums not in matched_enum_set by building a new list
+        filtered_enum_list = []
+        for enum in student_model.enum_list:
+            if enum in matched_enum_set:
+                enum.values = [value for value in enum.values if value in matched_value_set]
+                enum.assign_content_reference()
+                enum.relations = []
+                filtered_enum_list.append(enum)
+        filtered_relation_list = [rel for rel in student_model.relation_list if rel in matched_relation_set]
+        return UMLModel(plantuml_str=None, class_list=filtered_class_list, enum_list=filtered_enum_list, relation_list=filtered_relation_list)
+

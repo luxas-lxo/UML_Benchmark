@@ -60,10 +60,12 @@ class ScoringScheme:
         cpt_cls = ScoringCriteria(COMPLETENESS, "CPT.CLS", "All necessary classes are included")
         
         cpt_att = ScoringCriteria(COMPLETENESS, "CPT.ATT", "Classes include all necessary attributes")
+        cpt_att_der = ScoringCriteria(COMPLETENESS, "CPT.ATT.DER", "Attributes include all necessary derivation state indicators")
         cpt_att_vis = ScoringCriteria(COMPLETENESS, "CPT.ATT.VIS", "Attributes include all necessary visibility modifiers")
+        cpt_att_mul = ScoringCriteria(COMPLETENESS, "CPT.ATT.MUL", "Attributes include all necessary multiplicities")
         cpt_att_typ = ScoringCriteria(COMPLETENESS, "CPT.ATT.TYP", "Attributes include all necessary data types")
         cpt_att_int = ScoringCriteria(COMPLETENESS, "CPT.ATT.INT", "Attributes include all necessary initial values")
-        attribute_criteria = [cpt_att_vis, cpt_att_typ, cpt_att_int]
+        attribute_criteria = [cpt_att_der,cpt_att_vis, cpt_att_mul, cpt_att_typ, cpt_att_int]
 
         cpt_opr = ScoringCriteria(COMPLETENESS, "CPT.OPR", "Classes include all necessary operations")
         cpt_opr_vis = ScoringCriteria(COMPLETENESS, "CPT.OPR.VIS", "Operations include all necessary visibility modifiers")
@@ -104,9 +106,10 @@ class ScoringScheme:
         # NOTE: at the moment nothing can be syntactically wrong with derivation state either it is there or not so we only evaluate that in the semantics
         #syc_att_der = ScoringCriteria(SYNTAX, "SYC.ATT.DER", "Deriviation state of attributes is correctly represented")
         syc_att_vis = ScoringCriteria(SYNTAX, "SYC.ATT.VIS", "Visibility of attributes is correctly represented")
+        syc_att_mul = ScoringCriteria(SYNTAX, "SYC.ATT.MUL", "Multiplicity of attributes is correctly represented")
         syc_att_typ = ScoringCriteria(SYNTAX, "SYC.ATT.TYP", "Data types of attributes are correctly represented")
         syc_att_int = ScoringCriteria(SYNTAX, "SYC.ATT.INT", "Initial values of attributes are correctly represented")
-        att_criteria = [syc_att_nam, syc_att_vis, syc_att_typ, syc_att_int]
+        att_criteria = [syc_att_nam, syc_att_vis, syc_att_mul, syc_att_typ, syc_att_int]
 
         syc_opr = ScoringCriteria(SYNTAX, "SYC.OPR", "Class operations are correctly represented")
         syc_opr_nam = ScoringCriteria(SYNTAX, "SYC.OPR.NAM", "Operation names are correctly represented")
@@ -150,10 +153,11 @@ class ScoringScheme:
         syg_att_nam = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.NAM", "Attribute names are correctly represented")
         #syg_att_der = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.DER", "Deriviation state of attributes is correctly represented")
         syg_att_vis = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.VIS", "Visibility of attributes is correctly represented")
+        syg_att_mul = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.MUL", "Multiplicity of attributes is correctly represented")
         syg_att_typ = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.TYP", "Data types of attributes are correctly represented")
         syg_att_int = ScoringCriteria(SYNTAX_GLOBAL, "SYG.ATT.INT", "Initial values of attributes are correctly represented")
-        att_criteria = [syg_att_nam, syg_att_vis, syg_att_typ, syg_att_int]
-        
+        att_criteria = [syg_att_nam, syg_att_vis, syg_att_mul, syg_att_typ, syg_att_int]
+
         syg_opr = ScoringCriteria(SYNTAX_GLOBAL, "SYG.OPR", "Class operations are correctly represented")
         syg_opr_nam = ScoringCriteria(SYNTAX_GLOBAL, "SYG.OPR.NAM", "Operation names are correctly represented")
         syg_opr_vis = ScoringCriteria(SYNTAX_GLOBAL, "SYG.OPR.VIS", "Visibility of operations is correctly represented")
@@ -188,15 +192,21 @@ class ScoringScheme:
         }
 
     def init_semantics(self):
-        sec_cls = ScoringCriteria(SEMANTICS, "SEC.CLS", "Class names are appropriate")
+        sec_cls = ScoringCriteria(SEMANTICS, "SEC.CLS", "Classes are appropriate")
+        sec_cls_nam = ScoringCriteria(SEMANTICS, "SEC.CLS.NAM", "Classes are named appropriate")
+        # NOTE: could also be considered attribute/operation criteria
+        sec_cls_att = ScoringCriteria(SEMANTICS, "SEC.CLS.ATT", "Classes attributes are placed appropriate")
+        sec_cls_opr = ScoringCriteria(SEMANTICS, "SEC.CLS.OPR", "Classes operations are placed appropriate")
+        cls_criteria = [sec_cls_nam, sec_cls_att, sec_cls_opr]
 
         sec_att = ScoringCriteria(SEMANTICS, "SEC.ATT", "Attribute content is appropriate")
         sec_att_nam = ScoringCriteria(SEMANTICS, "SEC.ATT.NAM", "Attribute names are appropriate")
         sec_att_der = ScoringCriteria(SEMANTICS, "SEC.ATT.DER", "Derivation state of attributes is appropriate")
         sec_att_vis = ScoringCriteria(SEMANTICS, "SEC.ATT.VIS", "Visibility of attributes is appropriate")
+        sec_att_mul = ScoringCriteria(SEMANTICS, "SEC.ATT.MUL", "Multiplicity of attributes is appropriate")
         sec_att_typ = ScoringCriteria(SEMANTICS, "SEC.ATT.TYP", "Data types of attributes are appropriate")
         sec_att_int = ScoringCriteria(SEMANTICS, "SEC.ATT.INT", "Initial values of attributes are appropriate")
-        att_criteria = [sec_att_nam, sec_att_der, sec_att_vis, sec_att_typ, sec_att_int]
+        att_criteria = [sec_att_nam, sec_att_der, sec_att_vis, sec_att_mul, sec_att_typ, sec_att_int]
 
         sec_opr = ScoringCriteria(SEMANTICS, "SEC.OPR", "Operation content is appropriate")
         sec_opr_nam = ScoringCriteria(SEMANTICS, "SEC.OPR.NAM", "Operation names are appropriate")
@@ -205,7 +215,11 @@ class ScoringScheme:
         sec_opr_ret = ScoringCriteria(SEMANTICS, "SEC.OPR.RET", "Return values of operations are appropriate")
         opr_criteria = [sec_opr_nam, sec_opr_vis, sec_opr_par, sec_opr_ret]
 
-        sec_enm = ScoringCriteria(SEMANTICS, "SEC.ENM", "Enumeration names are appropriate")
+        sec_enm = ScoringCriteria(SEMANTICS, "SEC.ENM", "Enumerations are appropriate")
+        sec_enm_nam = ScoringCriteria(SEMANTICS, "SEC.ENM.NAM", "Enumeration names are appropriate")
+        sec_enm_val = ScoringCriteria(SEMANTICS, "SEC.ENM.VAL", "Enumeration values are appropriate")
+        enm_criteria = [sec_enm_nam, sec_enm_val]
+
         sec_val = ScoringCriteria(SEMANTICS, "SEC.VAL", "Enumeration values are appropriate")
 
         sec_rel = ScoringCriteria(SEMANTICS, "SEC.REL", "Relations are appropriate")
@@ -228,10 +242,10 @@ class ScoringScheme:
         #sec11 = ScoringCriteria(SEMANTICS, "SEC11", "There are no redundant relations")  
 
         self.semantics_criteria: Dict[str, Tuple[ScoringCriteria, Optional[List[ScoringCriteria]], Optional[List[ScoringCriteria]]]] = {
-            "CLS": (sec_cls, None, None),
+            "CLS": (sec_cls, cls_criteria, None),
             "ATT": (sec_att, att_criteria, None),
             "OPR": (sec_opr, opr_criteria, None),
-            "ENM": (sec_enm, None, None),
+            "ENM": (sec_enm, enm_criteria, None),
             "VAL": (sec_val, None, None),
             "REL": (sec_rel, relation_criteria, relation_type_criteria),
         } 

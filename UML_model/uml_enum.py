@@ -19,13 +19,16 @@ class UMLValue(GradeReference):
     
     def __hash__(self):
         return hash(self.name)
+    
+    def copy(self) -> 'UMLValue':
+        return UMLValue(name=self.name)
 
 class UMLEnum(UMLElement, GradeReference):
     def __init__(self, name: str, values: Optional[List[UMLValue]] = None):
         super().__init__(name)
         self.values: List[UMLValue] = values if values is not None else []
         self.relations: List[UMLRelation] = []
-        self.asign_content_reference()
+        self.assign_content_reference()
 
     def __repr__(self): 
         return f"UMLEnum({self.name}): values [{', '.join(v.name for v in self.values)}]"
@@ -46,7 +49,13 @@ class UMLEnum(UMLElement, GradeReference):
         if relation not in self.relations:
             self.relations.append(relation)
     
-    def asign_content_reference(self):
+    def assign_content_reference(self):
         for value in self.values:
             value.reference = self
+
+    def copy(self) -> 'UMLEnum':
+        return UMLEnum(
+            name=self.name,
+            values=[value.copy() for value in self.values]
+        )
         

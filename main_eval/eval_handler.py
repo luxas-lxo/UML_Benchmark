@@ -1,8 +1,9 @@
 from plantuml_eval.eval_model import EvalModel
+from UML_model.uml_relation import UMLRelationType
 from main_eval.eval_metrics import ScoringCriteria, ScoringScheme, COMPLETENESS, SYNTAX, SYNTAX_GLOBAL, SEMANTICS, NAMING, NAMING_GLOBAL
 from main_eval.eval_completeness import CompletenessEvaluator
-from UML_model.uml_relation import UMLRelationType
 from main_eval.eval_syntax import SyntaxEvaluator
+from main_eval.eval_semantics import SemanticsEvaluator
 
 from typing import List, Dict, Tuple, Optional
 class EvalHandler:
@@ -36,6 +37,16 @@ class EvalHandler:
                     self.evaluate_criteria(sub_criteria, model)
         
         for tuple in self.global_syntax_criteria.values():
+            criteria, sub_criteria_1, sub_criteria_2 = tuple
+            self.evaluate_criteria(criteria, model)
+            if sub_criteria_1:
+                for sub_criteria in sub_criteria_1:
+                    self.evaluate_criteria(sub_criteria, model)
+            if sub_criteria_2:
+                for sub_criteria in sub_criteria_2:
+                    self.evaluate_criteria(sub_criteria, model)
+
+        for tuple in self.semantics_criteria.values():
             criteria, sub_criteria_1, sub_criteria_2 = tuple
             self.evaluate_criteria(criteria, model)
             if sub_criteria_1:
@@ -78,6 +89,15 @@ class EvalHandler:
                 for sub in sub_2:
                     output.append(f"\t\tSub-criteria: {repr(sub)}")
         output.append(f"Semantics Criteria: {len(self.semantics_criteria)}")
+        for name, (criteria, sub_1, sub_2) in self.semantics_criteria.items():
+            output.append(f"{name}")
+            output.append(f"\t{repr(criteria)}")
+            if sub_1:
+                for sub in sub_1:
+                    output.append(f"\t\tSub-criteria: {repr(sub)}")
+            if sub_2:
+                for sub in sub_2:
+                    output.append(f"\t\tSub-criteria: {repr(sub)}")
         output.append(f"Naming Criteria: {len(self.naming_criteria)}")
         output.append(f"Global Naming Criteria: {len(self.global_naming_criteria)}")
         return "\n".join(output)
@@ -109,8 +129,12 @@ class EvalHandler:
         
         elif criteria.id == "CPT.ATT":
             return CompletenessEvaluator.evaluate_attributes(criteria, model)
+        elif criteria.id == "CPT.ATT.DER":
+            return CompletenessEvaluator.evaluate_att_derivation(criteria, model)
         elif criteria.id == "CPT.ATT.VIS":
             return CompletenessEvaluator.evaluate_att_visibility(criteria, model)
+        elif criteria.id == "CPT.ATT.MUL":
+            return CompletenessEvaluator.evaluate_att_multiplicity(criteria, model)
         elif criteria.id == "CPT.ATT.TYP":
             return CompletenessEvaluator.evaluate_att_data_type(criteria, model)
         elif criteria.id == "CPT.ATT.INT":
@@ -160,6 +184,8 @@ class EvalHandler:
             return SyntaxEvaluator.evaluate_att_name(criteria, model)
         elif criteria.id == "SYC.ATT.VIS":
             return SyntaxEvaluator.evaluate_att_visibility(criteria, model)
+        elif criteria.id == "SYC.ATT.MUL":
+            return SyntaxEvaluator.evaluate_att_multiplicity(criteria, model)
         elif criteria.id == "SYC.ATT.TYP":
             return SyntaxEvaluator.evaluate_att_data_type(criteria, model)
         elif criteria.id == "SYC.ATT.INT":
@@ -213,6 +239,8 @@ class EvalHandler:
             return SyntaxEvaluator.evaluate_att_name_global(criteria, model)
         elif criteria.id == "SYG.ATT.VIS":
             return SyntaxEvaluator.evaluate_att_visibility_global(criteria, model)
+        elif criteria.id == "SYG.ATT.MUL":
+            return SyntaxEvaluator.evaluate_att_multiplicity_global(criteria, model)
         elif criteria.id == "SYG.ATT.TYP":
             return SyntaxEvaluator.evaluate_att_data_type_global(criteria, model)
         elif criteria.id == "SYG.ATT.INT":
@@ -257,7 +285,73 @@ class EvalHandler:
     
     @staticmethod
     def evaluate_semantic_correctness(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
-        pass
+        if criteria.id == "SEC.CLS":
+            return SemanticsEvaluator.evaluate_classes(criteria, model)
+        elif criteria.id == "SEC.CLS.NAM":
+            return SemanticsEvaluator.evaluate_cls_names(criteria, model)
+        elif criteria.id == "SEC.CLS.ATT":
+            return SemanticsEvaluator.evaluate_cls_attributes(criteria, model)
+        elif criteria.id == "SEC.CLS.OPR":
+            return SemanticsEvaluator.evaluate_cls_operations(criteria, model)
+
+        elif criteria.id == "SEC.ATT":
+            return SemanticsEvaluator.evaluate_attributes(criteria, model)
+        elif criteria.id == "SEC.ATT.NAM":
+            return SemanticsEvaluator.evaluate_att_names(criteria, model)
+        elif criteria.id == "SEC.ATT.DER":
+            return SemanticsEvaluator.evaluate_att_derivation(criteria, model)
+        elif criteria.id == "SEC.ATT.VIS":
+            return SemanticsEvaluator.evaluate_att_visibility(criteria, model)
+        elif criteria.id == "SEC.ATT.MUL":
+            return SemanticsEvaluator.evaluate_att_multiplicity(criteria, model)
+        elif criteria.id == "SEC.ATT.TYP":
+            return SemanticsEvaluator.evaluate_att_data_types(criteria, model)
+        elif criteria.id == "SEC.ATT.INT":
+            return SemanticsEvaluator.evaluate_att_initial_values(criteria, model)
+
+        elif criteria.id == "SEC.OPR":
+            return SemanticsEvaluator.evaluate_operations(criteria, model)
+        elif criteria.id == "SEC.OPR.NAM":
+            return SemanticsEvaluator.evaluate_opr_names(criteria, model)
+        elif criteria.id == "SEC.OPR.VIS":
+            return SemanticsEvaluator.evaluate_opr_visibility(criteria, model)
+        elif criteria.id == "SEC.OPR.PAR":
+            return SemanticsEvaluator.evaluate_opr_params(criteria, model)
+        elif criteria.id == "SEC.OPR.RET":
+            return SemanticsEvaluator.evaluate_opr_return_types(criteria, model)
+        
+        elif criteria.id == "SEC.ENM":
+            return SemanticsEvaluator.evaluate_enumerations(criteria, model)
+        elif criteria.id == "SEC.ENM.NAM":
+            return SemanticsEvaluator.evaluate_enum_names(criteria, model)
+        elif criteria.id == "SEC.ENM.VAL":
+            return SemanticsEvaluator.evaluate_enum_content(criteria, model)
+        
+        elif criteria.id == "SEC.VAL":
+            return SemanticsEvaluator.evaluate_enum_values(criteria, model)
+        
+        elif criteria.id == "SEC.REL":
+            return SemanticsEvaluator.evaluate_relations(criteria, model)
+        elif criteria.id == "SEC.REL.TYP":
+            return SemanticsEvaluator.evaluate_rel_types(criteria, model)
+        elif criteria.id == "SEC.REL.MUL":
+            return SemanticsEvaluator.evaluate_rel_multiplicity(criteria, model)
+        elif criteria.id == "SEC.REL.DSC":
+            return SemanticsEvaluator.evaluate_rel_descriptions(criteria, model)
+        elif criteria.id == "SEC.ASS":
+            return SemanticsEvaluator.evaluate_relations_with_type(criteria, model, UMLRelationType.ASSOCIATION)
+        elif criteria.id == "SEC.AGG":
+            return SemanticsEvaluator.evaluate_relations_with_type(criteria, model, UMLRelationType.AGGREGATION)
+        elif criteria.id == "SEC.COM":
+            return SemanticsEvaluator.evaluate_relations_with_type(criteria, model, UMLRelationType.COMPOSITION)
+        elif criteria.id == "SEC.GEN":
+            return SemanticsEvaluator.evaluate_relations_with_type(criteria, model, UMLRelationType.GENERALIZATION)
+        elif criteria.id == "SEC.ACR":
+            return SemanticsEvaluator.evaluate_relations_with_type(criteria, model, UMLRelationType.ASSOCIATION_LINK)
+        
+        else:
+            raise ValueError(f"Unknown semantic correctness criteria id: {criteria.id}")
+        
 
     @staticmethod
     def evaluate_naming(criteria: ScoringCriteria, model: EvalModel) -> ScoringCriteria:
